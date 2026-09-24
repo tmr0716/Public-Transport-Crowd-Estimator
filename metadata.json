@@ -1,0 +1,6 @@
+{
+  "name": "ADAPT-Drive - Autonomous Vehicle Navigation & Safety Assistant",
+  "description": "Realistic automotive navigation and collision avoidance system integrating Google Maps route planning with adaptive autonomous path planning on Indian roads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
