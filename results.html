@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimation Results & Alternatives — TransitCrowd</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="nav-container">
+            <div class="logo-area">
+                <h1>Estimation Results</h1>
+                <p>DAA Alternative Route Recommendation & Occupancy Report</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Dashboard</a></li>
+                    <li><a href="results.html" class="active">Live Status</a></li>
+                    <li><a href="algorithms.html">DAA Algorithms</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Selected Service Details -->
+        <div class="search-section" style="margin-top: 2rem;">
+            <h2>Selected Service Analysis</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Service ID</p>
+                    <p style="font-size: 1.25rem; font-weight: 700;">M-101 (Binary Search Match)</p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Route & Destination</p>
+                    <p style="font-size: 1.25rem; font-weight: 700;">Blue Line → Central Station</p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Current Occupancy</p>
+                    <p style="font-size: 1.25rem; font-weight: 700;">180 / 220 Pass. (81.8%)</p>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Classification</p>
+                    <span class="badge badge-high" style="font-size: 1rem; margin-top: 0.25rem;">High Crowd</span>
+                </div>
+            </div>
+            <div>
+                <p style="font-weight: 600; margin-bottom: 0.5rem;">Occupancy Level Bar</p>
+                <div class="progress-bar-bg" style="height: 1.25rem;">
+                    <div class="progress-bar-fill" style="width: 81.8%; background: #ea580c;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alternative Recommendations -->
+        <h3 style="margin-bottom: 1rem;">Recommended Alternative Services (Least Crowded First)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Service ID</th>
+                    <th>Route Name</th>
+                    <th>Departure</th>
+                    <th>Occupancy %</th>
+                    <th>Crowd Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>1 (Best)</strong></td>
+                    <td>M-105</td>
+                    <td>Blue Line Express (Alternate)</td>
+                    <td>08:15 AM</td>
+                    <td>
+                        36.4%
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 36.4%; background: #16a34a;"></div></div>
+                    </td>
+                    <td><span class="badge badge-low">Low</span></td>
+                </tr>
+                <tr>
+                    <td><strong>2</strong></td>
+                    <td>B-210</td>
+                    <td>Express Bus Corridor</td>
+                    <td>08:10 AM</td>
+                    <td>
+                        52.0%
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 52%; background: #ca8a04;"></div></div>
+                    </td>
+                    <td><span class="badge badge-moderate">Moderate</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="notice-box">
+            <strong>DAA Algorithm Note:</strong> Alternative routes were filtered by matching destination and sorted in ascending order using <em>Merge Sort</em> ($O(N \log N)$) to instantly surface the least crowded feasible alternative.
+        </div>
+    </div>
+
+    <footer>
+        <p>Public Transport Crowd Estimator | Design and Analysis of Algorithms Academic Project</p>
+    </footer>
+</body>
+</html>
