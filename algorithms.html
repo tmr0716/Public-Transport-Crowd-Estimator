@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="nav-container">
+            <div class="logo-area">
+                <h1>DAA Algorithms</h1>
+                <p>Design and Analysis of Algorithms Implementation & Complexity Analysis</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Dashboard</a></li>
+                    <li><a href="results.html">Live Status</a></li>
+                    <li><a href="algorithms.html" class="active">DAA Algorithms</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Introduction to DAA Component -->
+        <div class="search-section" style="margin-top: 2rem;">
+            <h2>Algorithmic Overview</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+                This project demonstrates core algorithmic paradigms taught in Design and Analysis of Algorithms (DAA), including searching strategies, divide-and-conquer sorting, and constraint-based filtering for alternative transit routing.
+            </p>
+        </div>
+
+        <!-- Algorithm 1: Linear Search -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h3>1. Linear Search (Unsorted Service Lookup)</h3>
+            <p>Used when searching through newly added or unsorted transit services by route name or description.</p>
+            <p><strong>Time Complexity:</strong> Best: $O(1)$, Average: $O(N)$, Worst: $O(N)$</p>
+            <p><strong>Space Complexity:</strong> $O(1)$</p>
+        </div>
+
+        <!-- Algorithm 2: Binary Search -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h3>2. Binary Search (Sorted Service ID Lookup)</h3>
+            <p>Used for rapid service retrieval by Service ID. Requires the dataset to be strictly sorted beforehand.</p>
+            <p><strong>Time Complexity:</strong> Best: $O(1)$, Average: $O(\log N)$, Worst: $O(\log N)$</p>
+            <p><strong>Space Complexity:</strong> $O(1)$ (Iterative implementation)</p>
+        </div>
+
+        <!-- Algorithm 3: Merge Sort -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h3>3. Merge Sort (Occupancy Sorting & Ranking)</h3>
+            <p>A stable divide-and-conquer sorting algorithm used to order transport services by occupancy percentage from lowest to highest.</p>
+            <p><strong>Time Complexity:</strong> Best / Average / Worst: $O(N \log N)$</p>
+            <p><strong>Space Complexity:</strong> $O(N)$ for auxiliary temporary arrays during merging.</p>
+        </div>
+
+        <!-- Complexity Comparison Table -->
+        <h3 style="margin-bottom: 1rem;">Algorithm Complexity Comparison</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>Best Case</th>
+                    <th>Average Case</th>
+                    <th>Worst Case</th>
+                    <th>Space Complexity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Linear Search</strong></td>
+                    <td>$O(1)$</td>
+                    <td>$O(N)$</td>
+                    <td>$O(N)$</td>
+                    <td>$O(1)$</td>
+                </tr>
+                <tr>
+                    <td><strong>Binary Search</strong></td>
+                    <td>$O(1)$</td>
+                    <td>$O(\log N)$</td>
+                    <td>$O(\log N)$</td>
+                    <td>$O(1)$</td>
+                </tr>
+                <tr>
+                    <td><strong>Merge Sort</strong></td>
+                    <td>$O(N \log N)$</td>
+                    <td>$O(N \log N)$</td>
+                    <td>$O(N \log N)$</td>
+                    <td>$O(N)$</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <footer>
+        <p>Public Transport Crowd Estimator | Design and Analysis of Algorithms Academic Project</p>
+    </footer>
+</body>
+</html>
