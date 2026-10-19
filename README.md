@@ -1,38 +1,15 @@
-Public Transport Crowd Estimator — DAA Academic Project
+# Public Transport Crowd Estimator — DAA Project
 
-Problem Statement
+A web-based public transport occupancy estimator and router built with **HTML5**, **CSS3**, and a high-performance **C++17** backend serving dynamic HTTP requests.
 
-Urban public transit networks (buses, metros, suburban local trains) frequently suffer from severe passenger congestion during peak hours. Commuters lack real-time visibility into carriage occupancy levels, leading to overcrowded platforms and inefficient load distribution across alternative routes.
+## DAA Algorithms Implemented
+1. **Linear Search**: $O(N)$ search through unsorted route records.
+2. **Binary Search**: $O(\log N)$ lookup by unique Service ID on pre-sorted data.
+3. **Merge Sort**: $O(N \log N)$ sorting algorithm used to rank transit services by occupancy percentage.
+4. **Dijkstra's Algorithm**: Shortest travel-time path calculation across a weighted graph of transit stops ($O((V+E)\log V)$).
+5. **Dynamic Programming**: Bounded-leg minimum cost path optimization ($O(K \cdot (V+E))$).
 
-Objectives
-
-Estimate Occupancy: Calculate passenger occupancy percentage dynamically using simulated fleet datasets.
-
-Classify Crowd Levels: Categorize occupancy into Low (0–40%), Moderate (>40–70%), High (>70–90%), Very High (>90–100%), and Overcrowded (>100%).
-
-Apply DAA Algorithms: Implement Linear Search, Binary Search, and Merge Sort with rigorous complexity analysis.
-
-Recommend Alternatives: Filter and rank feasible alternative routes heading to the same destination by ascending occupancy.
-
-Instructions to Compile and Run C++ Backend
-
-Navigate to the backend/ directory:
-
-cd backend
-
-
-Compile using a modern C++17 compiler (e.g., g++):
-
-g++ -std=c++17 main.cpp crowd_estimator.cpp -o crowd_estimator
-
-
-Run the executable:
-
-./crowd_estimator
-
-
-Instructions to Launch Frontend
-
-Open index.html directly in any modern web browser to view the dashboard and search interface.
-
-Navigate between index.html, results.html, and algorithms.html to review occupancy reports and DAA complexity analyses.
+## Local Development & Compilation
+```bash
+g++ -std=c++17 -O3 backend/main.cpp backend/crowd_estimator.cpp -o transport_server -lpthread
+./transport_server
