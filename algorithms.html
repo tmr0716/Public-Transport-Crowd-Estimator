@@ -3,98 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAA Algorithms — TransitCrowd</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <div class="nav-container">
-            <div class="logo-area">
-                <h1>DAA Algorithms</h1>
-                <p>Design and Analysis of Algorithms Implementation & Complexity Analysis</p>
-            </div>
+    <header class="navbar">
+        <div class="container nav-content">
+            <h1>TransitCrowd DAA</h1>
             <nav>
-                <ul>
-                    <li><a href="index.html">Dashboard</a></li>
-                    <li><a href="results.html">Live Status</a></li>
-                    <li><a href="algorithms.html" class="active">DAA Algorithms</a></li>
-                </ul>
+                <a href="/">Dashboard</a>
+                <a href="/algorithms" class="active">DAA Algorithms</a>
             </nav>
         </div>
     </header>
 
-    <div class="container">
-        <!-- Introduction to DAA Component -->
-        <div class="search-section" style="margin-top: 2rem;">
-            <h2>Algorithmic Overview</h2>
-            <p style="color: var(--text-muted); margin-bottom: 1rem;">
-                This project demonstrates core algorithmic paradigms taught in Design and Analysis of Algorithms (DAA), including searching strategies, divide-and-conquer sorting, and constraint-based filtering for alternative transit routing.
-            </p>
+    <main class="container my-5">
+        <div class="card mb-4">
+            <h2>Design and Analysis of Algorithms (DAA) Implementation Details</h2>
+            <p>This project integrates four fundamental algorithmic paradigms to deliver efficient public transport estimation and routing.</p>
         </div>
 
-        <!-- Algorithm 1: Linear Search -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <h3>1. Linear Search (Unsorted Service Lookup)</h3>
-            <p>Used when searching through newly added or unsorted transit services by route name or description.</p>
-            <p><strong>Time Complexity:</strong> Best: $O(1)$, Average: $O(N)$, Worst: $O(N)$</p>
-            <p><strong>Space Complexity:</strong> $O(1)$</p>
+        <div class="card mb-4">
+            <h3>1. Searching (Linear Search & Binary Search)</h3>
+            <p><strong>Purpose:</strong> Locate specific transit services by route name or unique Service ID.</p>
+            <p><strong>How it works:</strong> Linear Search scans unsorted route strings in $O(N)$ time. Binary Search partitions pre-sorted service IDs in logarithmic time $O(\log N)$.</p>
+            <p><strong>Time Complexity:</strong> Linear Search $O(N)$, Binary Search $O(\log N)$. Space Complexity: $O(1)$.</p>
         </div>
 
-        <!-- Algorithm 2: Binary Search -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <h3>2. Binary Search (Sorted Service ID Lookup)</h3>
-            <p>Used for rapid service retrieval by Service ID. Requires the dataset to be strictly sorted beforehand.</p>
-            <p><strong>Time Complexity:</strong> Best: $O(1)$, Average: $O(\log N)$, Worst: $O(\log N)$</p>
-            <p><strong>Space Complexity:</strong> $O(1)$ (Iterative implementation)</p>
+        <div class="card mb-4">
+            <h3>2. Sorting (Merge Sort)</h3>
+            <p><strong>Purpose:</strong> Rank transport services by occupancy percentage from least crowded to most crowded.</p>
+            <p><strong>How it works:</strong> Divides the service array recursively into halves, sorts them, and merges them stably.</p>
+            <p><strong>Time Complexity:</strong> $O(N \log N)$ across all cases. Space Complexity: $O(N)$.</p>
         </div>
 
-        <!-- Algorithm 3: Merge Sort -->
-        <div class="card" style="margin-bottom: 1.5rem;">
-            <h3>3. Merge Sort (Occupancy Sorting & Ranking)</h3>
-            <p>A stable divide-and-conquer sorting algorithm used to order transport services by occupancy percentage from lowest to highest.</p>
-            <p><strong>Time Complexity:</strong> Best / Average / Worst: $O(N \log N)$</p>
-            <p><strong>Space Complexity:</strong> $O(N)$ for auxiliary temporary arrays during merging.</p>
+        <div class="card mb-4">
+            <h3>3. Graph Algorithm (Dijkstra's Shortest Path)</h3>
+            <p><strong>Purpose:</strong> Compute the fastest travel-time route between transit stops.</p>
+            <p><strong>How it works:</strong> Models stations as vertices and travel times as non-negative edge weights, using a priority queue to greedily find the minimum travel duration.</p>
+            <p><strong>Time Complexity:</strong> $O((V + E) \log V)$. Space Complexity: $O(V + E)$.</p>
         </div>
 
-        <!-- Complexity Comparison Table -->
-        <h3 style="margin-bottom: 1rem;">Algorithm Complexity Comparison</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Algorithm</th>
-                    <th>Best Case</th>
-                    <th>Average Case</th>
-                    <th>Worst Case</th>
-                    <th>Space Complexity</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Linear Search</strong></td>
-                    <td>$O(1)$</td>
-                    <td>$O(N)$</td>
-                    <td>$O(N)$</td>
-                    <td>$O(1)$</td>
-                </tr>
-                <tr>
-                    <td><strong>Binary Search</strong></td>
-                    <td>$O(1)$</td>
-                    <td>$O(\log N)$</td>
-                    <td>$O(\log N)$</td>
-                    <td>$O(1)$</td>
-                </tr>
-                <tr>
-                    <td><strong>Merge Sort</strong></td>
-                    <td>$O(N \log N)$</td>
-                    <td>$O(N \log N)$</td>
-                    <td>$O(N \log N)$</td>
-                    <td>$O(N)$</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+        <div class="card mb-4">
+            <h3>4. Dynamic Programming (Bounded-Leg Minimum Travel Cost)</h3>
+            <p><strong>Purpose:</strong> Determine the optimal route minimizing monetary travel cost within a maximum connection constraint ($K$ legs).</p>
+            <p><strong>How it works:</strong> Utilizes state tabulation $dp[legs][stop]$ to build optimal subproblem solutions without redundant recalculations.</p>
+            <p><strong>Time Complexity:</strong> $O(K \cdot (V + E))$. Space Complexity: $O(K \cdot V)$.</p>
+        </div>
 
-    <footer>
-        <p>Public Transport Crowd Estimator | Design and Analysis of Algorithms Academic Project</p>
+        <div class="text-center">
+            <a href="/" class="btn">Return to Dashboard</a>
+        </div>
+    </main>
+
+    <footer class="text-center py-4">
+        <p>&copy; 2026 Public Transport Crowd Estimator — College DAA Project</p>
     </footer>
 </body>
 </html>
