@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CrowdWise — Smart Crowd Estimator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">CrowdWise <span>Smart Crowd Estimator & Route Planner</span></div>
+        <div class="badge">DAA Project Engine (C++17 Backend)</div>
+    </header>
+
+    <main class="container">
+        <!-- Disclaimer Notice -->
+        <div class="notice-box">
+            <strong>Simulation Notice:</strong> All crowd counts, time slots, and predictions are generated using simulated historical data models for academic demonstration.
+        </div>
+
+        <!-- Dashboard Statistics Cards -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Stops</h3>
+                <p class="stat-value">{{ stats.total_stops }}</p>
+            </div>
+            <div class="stat-card alert">
+                <h3>High-Crowd Stops</h3>
+                <p class="stat-value">{{ stats.high_crowd_count }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Average Crowd Count</h3>
+                <p class="stat-value">{{ stats.average_crowd }}</p>
+            </div>
+            <div class="stat-card success">
+                <h3>Least-Crowded Stop</h3>
+                <p class="stat-value small">{{ stats.least_crowded_name }}</p>
+            </div>
+        </section>
+
+        <!-- Interactive Controls Grid -->
+        <div class="controls-grid">
+            <!-- Search Stop -->
+            <div class="card">
+                <h2>Search Stop by ID</h2>
+                <form action="/search" method="POST" class="form-group">
+                    <input type="text" name="stop_id" placeholder="e.g. S01, S05" value="{{ searched_id or '' }}" required>
+                    <button type="submit" class="btn primary">Search Stop</button>
+                </form>
+                {% if search_result %}
+                <div class="search-result-box">
+                    <strong>Found:</strong> {{ search_result.name }} (ID: {{ search_result.id }})<br>
+                    Current Crowd: {{ search_result.count }} 
+                    <span class="badge-tag {{ search_result.level | lower }}">{{ search_result.level }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sort Controls -->
+            <div class="card">
+                <h2>Sort Stops (Merge Sort $\mathcal{O}(N \log N)$)</h2>
+                <form action="/sort" method="POST" class="form-group inline-form">
+                    <select name="order">
+                        <option value="asc" {% if current_sort == 'asc' %}selected{% endif %}>Least to Most Crowded (Ascending)</option>
+                        <option value="desc" {% if current_sort == 'desc' %}selected{% endif %}>Most to Least Crowded (Descending)</option>
+                    </select>
+                    <button type="submit" class="btn secondary">Apply Sort</button>
+                </form>
+            </div>
+
+            <!-- Dynamic Programming Prediction -->
+            <div class="card">
+                <h2>Departure Time Optimization (DP)</h2>
+                <form action="/predict" method="POST" class="form-group">
+                    <select name="stop_id">
+                        {% for s in stops %}
+                        <option value="{{ s.id }}">{{ s.id }} - {{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn primary">Calculate Optimal Time</button>
+                </form>
+            </div>
+
+            <!-- Route Planning -->
+            <div class="card">
+                <h2>Route Planning (Dijkstra's Algorithm)</h2>
+                <form action="/route" method="POST" class="form-group routing-form">
+                    <div class="select-group">
+                        <label>Source:</label>
+                        <select name="source_id">
+                            {% for s in stops %}
+                            <option value="{{ s.id }}">{{ s.id }} - {{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label>Destination:</label>
+                        <select name="dest_id" selected="S09">
+                            {% for s in stops %}
+                            <option value="{{ s.id }}" {% if s.id == 'S09' %}selected{% endif %}>{{ s.id }} - {{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn accent">Compare Routes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Crowd Table Section -->
+        <section class="card full-width">
+            <h2>Transport Stops Live Crowd Status</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stop ID</th>
+                            <th>Stop Name</th>
+                            <th>Current Simulated Count</th>
+                            <th>Crowd Classification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stop in stops %}
+                        <tr>
+                            <td><code>{{ stop.id }}</code></td>
+                            <td><strong>{{ stop.name }}</strong></td>
+                            <td>{{ stop.count }}</td>
+                            <td>
+                                <span class="badge-tag {{ stop.level | lower }}">{{ stop.level }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- DAA Algorithm Information Section -->
+        <section class="card full-width info-section">
+            <h2>Algorithm & Complexity Reference Guide</h2>
+            <div class="info-grid">
+                <div>
+                    <h3>Merge Sort</h3>
+                    <p>Manually implemented divide-and-conquer sorting algorithm used to sort transport stops by crowd counts.</p>
+                    <p class="complexity">Time: $\mathcal{O}(N \log N)$ | Space: $\mathcal{O}(N)$</p>
+                </div>
+                <div>
+                    <h3>Binary Search</h3>
+                    <p>Logarithmic search executed on sorted stop IDs to retrieve specific station metrics instantly.</p>
+                    <p class="complexity">Time: $\mathcal{O}(\log N)$ | Space: $\mathcal{O}(1)$</p>
+                </div>
+                <div>
+                    <h3>Dijkstra's Algorithm</h3>
+                    <p>Computes shortest-distance paths and crowd-cost-optimized routes across graph adjacency lists.</p>
+                    <p class="complexity">Time: $\mathcal{O}((V + E) \log V)$ | Space: $\mathcal{O}(V + E)$</p>
+                </div>
+                <div>
+                    <h3>Dynamic Programming</h3>
+                    <p>Tabulates future time-slot penalties to recommend the optimal departure time minimizing waiting and congestion costs.</p>
+                    <p class="complexity">Time: $\mathcal{O}(N^2)$ | Space: $\mathcal{O}(N)$</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>CrowdWise DAA Project &copy; 2026 | Built with C++17, Flask, HTML5 & CSS3</p>
+    </footer>
+</body>
+</html>
