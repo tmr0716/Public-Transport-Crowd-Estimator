@@ -1,15 +1,15 @@
-# Public Transport Crowd Estimator — DAA Project
+# CrowdWise: Smart Crowd Estimator and Route Recommendation System
 
-A web-based public transport occupancy estimator and router built with **HTML5**, **CSS3**, and a high-performance **C++17** backend serving dynamic HTTP requests.
+A complete college-level Design and Analysis of Algorithms (DAA) project built in C++17 with a minimal Flask Python backend and responsive HTML5/CSS3 frontend. Strictly no JavaScript.
 
-## DAA Algorithms Implemented
-1. **Linear Search**: $O(N)$ search through unsorted route records.
-2. **Binary Search**: $O(\log N)$ lookup by unique Service ID on pre-sorted data.
-3. **Merge Sort**: $O(N \log N)$ sorting algorithm used to rank transit services by occupancy percentage.
-4. **Dijkstra's Algorithm**: Shortest travel-time path calculation across a weighted graph of transit stops ($O((V+E)\log V)$).
-5. **Dynamic Programming**: Bounded-leg minimum cost path optimization ($O(K \cdot (V+E))$).
+## Tech Stack
+- **C++17**: Core algorithms (Merge Sort, Binary Search, Dijkstra's Algorithm, Dynamic Programming) and file I/O.
+- **Python (Flask)**: Lightweight backend integration serving HTML templates and invoking the compiled C++ binary.
+- **HTML5 / CSS3**: Modern dark-navy dashboard interface.
 
-## Local Development & Compilation
-```bash
-g++ -std=c++17 -O3 backend/main.cpp backend/crowd_estimator.cpp -o transport_server -lpthread
-./transport_server
+## Setup & Running on Windows (VS Code)
+
+1. **Prerequisites**: Ensure you have **MinGW-w64 (`g++`)** and **Python 3** installed and added to your Windows System Environment PATH.
+2. **Execution**: Double-click `run.bat` or open your terminal in the project directory and run:
+   ```cmd
+   run.bat
