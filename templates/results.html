@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }} — CrowdWise</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">CrowdWise <span>Analysis Results</span></div>
+        <a href="/" class="btn secondary">Back to Dashboard</a>
+    </header>
+
+    <main class="container">
+        <div class="card result-card">
+            <h1>{{ title }}</h1>
+
+            {% if result_type == 'dp' %}
+            <div class="result-box">
+                <div class="metric-row">
+                    <span>Selected Stop ID:</span>
+                    <strong>{{ stop_id }}</strong>
+                </div>
+                <div class="metric-row highlight">
+                    <span>Recommended Departure Time:</span>
+                    <strong>{{ data.optimal_slot_name }}</strong>
+                </div>
+                <div class="metric-row">
+                    <span>Estimated Cumulative Penalty Cost:</span>
+                    <strong>{{ data.min_total_cost }}</strong>
+                </div>
+                <p class="explanation">
+                    Calculated using Dynamic Programming tabulation over historical time slots, balancing crowd congestion penalties and waiting delay costs.
+                </p>
+            </div>
+            {% endif %}
+
+            {% if result_type == 'route' %}
+            <div class="route-comparison-grid">
+                <div class="route-box">
+                    <h3>Shortest Distance Route</h3>
+                    <p class="dist">Total Distance / Time: <strong>{{ data.shortest.dist }} mins</strong></p>
+                    <div class="path-chain">
+                        {% for stop in data.shortest.path %}
+                        <span class="path-node">{{ stop }}</span>
+                        {% if not loop.last %}<span class="arrow">&rarr;</span>{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="route-box highlight-route">
+                    <h3>Lowest Cost Route (Crowd-Aware)</h3>
+                    <p class="dist">Travel Cost: <strong>{{ data.lowest.cost }}</strong> | Distance: <strong>{{ data.lowest.dist }} mins</strong></p>
+                    <div class="path-chain">
+                        {% for stop in data.lowest.path %}
+                        <span class="path-node">{{ stop }}</span>
+                        {% if not loop.last %}<span class="arrow">&rarr;</span>{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <p class="explanation top-space">
+                Computed using Dijkstra's shortest path algorithm. The lowest-cost route weights both travel distance and real-time crowd congestion at intermediary stops.
+            </p>
+            {% endif %}
+
+            <div class="button-row top-space">
+                <a href="/" class="btn primary">Return to Dashboard</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
