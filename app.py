@@ -4,7 +4,10 @@ from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
-ENGINE_PATH = os.path.join("build", "crowd_engine.exe")
+ENGINE_PATH = os.path.join(
+    "build",
+    "crowd_engine.exe" if os.name == "nt" else "crowd_engine"
+)
 CSV_PATH = os.path.join("data", "stops.csv")
 
 def run_cpp_command(args):
