@@ -1,12 +1,15 @@
+#include "httplib.h"
 #include <iostream>
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <iomanip>
+#include <sstream>
 
 using namespace std;
 
-// --- 1. DATA STRUCTURES ---
+// ============================================================================
+// 1. DATA STRUCTURES
+// ============================================================================
 struct Edge {
     int src, dest, weight;
     bool operator<(const Edge& other) const {
@@ -17,11 +20,13 @@ struct Edge {
 struct TransitStop {
     int id;
     string name;
-    int crowdDensity; // 1 to 100
+    int crowdDensity; // 1 to 100 %
     int peakHourDemand;
 };
 
-// --- 2. DISJOINT SET UNION (DSU) FOR KRUSKAL'S MST ---
+// ============================================================================
+// 2. DISJOINT SET UNION (DSU) FOR KRUSKAL'S MST
+// ============================================================================
 class DSU {
     vector<int> parent, rank;
 public:
@@ -32,8 +37,7 @@ public:
     }
 
     int find(int i) {
-        if (parent[i] == i)
-            return i;
+        if (parent[i] == i) return i;
         return parent[i] = find(parent[i]); // Path compression
     }
 
@@ -41,16 +45,16 @@ public:
         int root_i = find(i);
         int root_j = find(j);
         if (root_i != root_j) {
-            if (rank[root_i] < rank[root_j])
-                swap(root_i, root_j);
+            if (rank[root_i] < rank[root_j]) swap(root_i, root_j);
             parent[root_j] = root_i;
-            if (rank[root_i] == rank[root_j])
-                rank[root_i]++;
+            if (rank[root_i] == rank[root_j]) rank[root_i]++;
         }
     }
 };
 
-// --- 3. GRAPH ENGINE: KRUSKAL'S ALGORITHM ---
+// ============================================================================
+// 3. GRAPH ENGINE: KRUSKAL'S ALGORITHM
+// ============================================================================
 class TransportGraph {
     int V;
     vector<Edge> edges;
@@ -61,11 +65,11 @@ public:
         edges.push_back({u, v, congestionCost});
     }
 
-    void computeMinimumSpanningBackbone() {
+    vector<Edge> computeMinimumSpanningBackbone(int& totalCost) {
         sort(edges.begin(), edges.end()); // O(E log E)
         DSU dsu(V);
         vector<Edge> mst;
-        int totalCost = 0;
+        totalCost = 0;
 
         for (const auto& edge : edges) {
             if (dsu.find(edge.src) != dsu.find(edge.dest)) {
@@ -74,20 +78,13 @@ public:
                 totalCost += edge.weight;
             }
         }
-
-        cout << "\n============================================\n";
-        cout << " [MST] OPTIMAL TRANSIT BACKBONE (Kruskal's)\n";
-        cout << "============================================\n";
-        for (const auto& e : mst) {
-            cout << " Corridor: Stop " << e.src << " <---> Stop " << e.dest 
-                 << " | Congestion Weight: " << e.weight << "\n";
-        }
-        cout << " Minimum Total Congestion Backbone Weight: " << totalCost << "\n\n";
+        return mst;
     }
 };
 
-// --- 4. DYNAMIC PROGRAMMING: CROWD CAPACITATED ROUTE SELECTION ---
-// Knapsack DP: Maximize passenger clearance given max fleet capacity
+// ============================================================================
+// 4. DYNAMIC PROGRAMMING: FLEET CAPACITY OPTIMIZATION (0/1 KNAPSACK)
+// ============================================================================
 int optimizeFleetDispatch(int maxCapacity, const vector<int>& weights, const vector<int>& passengerDemand, int n) {
     vector<vector<int>> dp(n + 1, vector<int>(maxCapacity + 1, 0));
 
@@ -103,7 +100,9 @@ int optimizeFleetDispatch(int maxCapacity, const vector<int>& weights, const vec
     return dp[n][maxCapacity];
 }
 
-// --- 5. SORTING & SEARCHING ALGORITHMS ---
+// ============================================================================
+// 5. SORTING & SEARCHING ALGORITHMS
+// ============================================================================
 void merge(vector<TransitStop>& stops, int l, int m, int r) {
     int n1 = m - l + 1;
     int n2 = r - m;
@@ -114,7 +113,7 @@ void merge(vector<TransitStop>& stops, int l, int m, int r) {
 
     int i = 0, j = 0, k = l;
     while (i < n1 && j < n2) {
-        if (L[i].crowdDensity >= R[j].crowdDensity) { // Descending order
+        if (L[i].crowdDensity >= R[j].crowdDensity) { // Descending Order
             stops[k] = L[i++];
         } else {
             stops[k] = R[j++];
@@ -139,15 +138,17 @@ int binarySearchStopByDensity(const vector<TransitStop>& sortedStops, int target
     while (low <= high) {
         int mid = low + (high - low) / 2;
         if (sortedStops[mid].crowdDensity == targetDensity) return mid;
-        if (sortedStops[mid].crowdDensity < targetDensity) high = mid - 1; // Reverse sorted
+        if (sortedStops[mid].crowdDensity < targetDensity) high = mid - 1;
         else low = mid + 1;
     }
     return -1;
 }
 
-// --- MAIN EXECUTION ---
-int main() {
-    // 1. Initialize Stops
+// ============================================================================
+// 6. JSON RESPONSE BUILDER FOR FRONTEND INTEGRATION
+// ============================================================================
+string generateAnalyticsJson() {
+    // A. Initialize & Sort Stops (Merge Sort)
     vector<TransitStop> stops = {
         {0, "Central Terminal", 85, 450},
         {1, "Tech Park Station", 92, 600},
@@ -155,31 +156,9 @@ int main() {
         {3, "Suburban Hub", 68, 350},
         {4, "Airport Express", 30, 150}
     };
-
-    // 2. Sorting by Crowd Density (Merge Sort)
     mergeSortStops(stops, 0, stops.size() - 1);
 
-    cout << "============================================\n";
-    cout << " [SORTING] STOPS RANKED BY CONGESTION (Merge Sort)\n";
-    cout << "============================================\n";
-    for (const auto& s : stops) {
-        cout << " [" << s.id << "] " << left << setw(22) << s.name 
-             << " | Density: " << s.crowdDensity << "% | Demand: " << s.peakHourDemand << "\n";
-    }
-
-    // 3. Binary Search Example
-    int target = 68;
-    int index = binarySearchStopByDensity(stops, target);
-    cout << "\n============================================\n";
-    cout << " [SEARCHING] BINARY SEARCH FOR DENSITY = " << target << "%\n";
-    cout << "============================================\n";
-    if (index != -1) {
-        cout << " Found Stop: " << stops[index].name << " at sorted rank " << index + 1 << "\n";
-    } else {
-        cout << " Stop with density " << target << "% not found.\n";
-    }
-
-    // 4. Graph Construction & Kruskal's MST
+    // B. Graph Computation (Kruskal's MST)
     TransportGraph graph(5);
     graph.addRoute(0, 1, 15);
     graph.addRoute(0, 2, 10);
@@ -188,21 +167,82 @@ int main() {
     graph.addRoute(2, 3, 20);
     graph.addRoute(3, 4, 8);
 
-    graph.computeMinimumSpanningBackbone();
+    int totalMstCost = 0;
+    vector<Edge> mstEdges = graph.computeMinimumSpanningBackbone(totalMstCost);
 
-    // 5. Dynamic Programming Allocation
+    // C. Dynamic Programming Optimization
     vector<int> busCapacityCost = {10, 20, 30, 40};
     vector<int> passengerClearance = {60, 100, 120, 240};
     int maxFleetCapacity = 50;
-
     int maxCleared = optimizeFleetDispatch(maxFleetCapacity, busCapacityCost, passengerClearance, busCapacityCost.size());
 
-    cout << "============================================\n";
-    cout << " [DP] FLEET CAPACITY OPTIMIZATION (Knapsack DP)\n";
-    cout << "============================================\n";
-    cout << " Maximum Fleet Bus Capacity Limit: " << maxFleetCapacity << " units\n";
-    cout << " Maximum Passenger Flow Cleared: " << maxCleared << " passengers/hr\n";
-    cout << "============================================\n";
+    // D. Search Execution
+    int searchResultRank = binarySearchStopByDensity(stops, 68);
 
+    // E. Serialize to JSON format
+    stringstream json;
+    json << "{\n";
+
+    // Stops array
+    json << "  \"stops\": [\n";
+    for (size_t i = 0; i < stops.size(); ++i) {
+        json << "    {\"id\": " << stops[i].id
+             << ", \"name\": \"" << stops[i].name << "\""
+             << ", \"density\": " << stops[i].crowdDensity
+             << ", \"demand\": " << stops[i].peakHourDemand << "}";
+        if (i < stops.size() - 1) json << ",";
+        json << "\n";
+    }
+    json << "  ],\n";
+
+    // MST array
+    json << "  \"mst\": {\n";
+    json << "    \"totalCost\": " << totalMstCost << ",\n";
+    json << "    \"edges\": [\n";
+    for (size_t i = 0; i < mstEdges.size(); ++i) {
+        json << "      {\"src\": " << mstEdges[i].src
+             << ", \"dest\": " << mstEdges[i].dest
+             << ", \"weight\": " << mstEdges[i].weight << "}";
+        if (i < mstEdges.size() - 1) json << ",";
+        json << "\n";
+    }
+    json << "    ]\n";
+    json << "  },\n";
+
+    // DP & Search metrics
+    json << "  \"dp\": {\n";
+    json << "    \"maxCapacity\": " << maxFleetCapacity << ",\n";
+    json << "    \"maxClearedPassengers\": " << maxCleared << "\n";
+    json << "  },\n";
+    json << "  \"searchQuery\": {\n";
+    json << "    \"targetDensity\": 68,\n";
+    json << "    \"foundIndex\": " << searchResultRank << "\n";
+    json << "  }\n";
+    json << "}";
+
+    return json.str();
+}
+
+// ============================================================================
+// 7. MAIN SERVER ROUTER
+// ============================================================================
+int main() {
+    httplib::Server svr;
+
+    // Serve static HTML/CSS files from the public/ folder
+    svr.set_mount_point("/", "./public");
+
+    // DAA API endpoint
+    svr.Get("/api/analytics", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(generateAnalyticsJson(), "application/json");
+    });
+
+    cout << "=========================================================\n";
+    cout << " Public Transport Crowd Estimator - Server Running\n";
+    cout << " Access UI at: http://localhost:8080\n";
+    cout << " API Endpoint: http://localhost:8080/api/analytics\n";
+    cout << "=========================================================\n";
+
+    svr.listen("0.0.0.0", 8080);
     return 0;
 }
