@@ -10,75 +10,106 @@
     <div class="dashboard">
         <header>
             <h1>Public Transport Crowd Estimator</h1>
-            <p class="subtitle">DAA Project | Graph Optimization, DP & Searching Engine</p>
+            <p class="subtitle">Dynamic Real-Time DAA Optimization Engine</p>
+            <button id="refresh-btn" onclick="fetchData()">🔄 Sync Live C++ Backend Data</button>
         </header>
 
         <section class="grid-container">
-            <!-- Congestion Ranking Card -->
+            <!-- Dynamic Congestion Ranking -->
             <div class="card">
                 <h2>Live Congestion Ranking (Merge Sort)</h2>
-                <ul class="stop-list">
-                    <li class="high-density">
-                        <span>Tech Park Station</span>
-                        <span class="badge red">92% Congested</span>
-                    </li>
-                    <li class="high-density">
-                        <span>Central Terminal</span>
-                        <span class="badge red">85% Congested</span>
-                    </li>
-                    <li class="med-density">
-                        <span>Suburban Hub</span>
-                        <span class="badge orange">68% Congested</span>
-                    </li>
-                    <li class="low-density">
-                        <span>University Junction</span>
-                        <span class="badge green">45% Congested</span>
-                    </li>
+                <ul id="stop-list" class="stop-list">
+                    <li class="loading">Loading stops from C++ engine...</li>
                 </ul>
             </div>
 
-            <!-- Graph Spanning Tree Card -->
+            <!-- Dynamic Spanning Tree -->
             <div class="card">
-                <h2>Optimal Minimum Backbone (Kruskal's MST)</h2>
-                <div class="mst-container">
-                    <div class="edge-item">
-                        <span>Stop 1 ↔ Stop 2</span>
-                        <span class="weight">Cost: 5</span>
-                    </div>
-                    <div class="edge-item">
-                        <span>Stop 3 ↔ Stop 4</span>
-                        <span class="weight">Cost: 8</span>
-                    </div>
-                    <div class="edge-item">
-                        <span>Stop 0 ↔ Stop 2</span>
-                        <span class="weight">Cost: 10</span>
-                    </div>
-                    <div class="edge-item">
-                        <span>Stop 2 ↔ Stop 3</span>
-                        <span class="weight">Cost: 20</span>
-                    </div>
+                <h2>Minimum Spanning Backbone (Kruskal's MST)</h2>
+                <div id="mst-container" class="mst-container">
+                    <div class="loading">Computing MST...</div>
                 </div>
             </div>
 
-            <!-- DP Capacity Optimization Card -->
+            <!-- Dynamic Fleet Capacity -->
             <div class="card full-width">
-                <h2>Fleet Demand Optimization (Dynamic Programming)</h2>
+                <h2>Fleet Capacity Optimization (0/1 Knapsack DP)</h2>
                 <div class="dp-results">
                     <div class="stat-box">
                         <span class="stat-title">Fleet Capacity Budget</span>
-                        <span class="stat-value">50 Units</span>
+                        <span id="stat-capacity" class="stat-value">--</span>
                     </div>
                     <div class="stat-box">
                         <span class="stat-title">Max Passengers Cleared</span>
-                        <span class="stat-value highlight">340 / hr</span>
+                        <span id="stat-cleared" class="stat-value highlight">--</span>
                     </div>
                     <div class="stat-box">
-                        <span class="stat-title">Algorithm Time Complexity</span>
-                        <span class="stat-value">O(N × Capacity)</span>
+                        <span class="stat-title">Binary Search Lookup</span>
+                        <span id="stat-search" class="stat-value">--</span>
                     </div>
                 </div>
             </div>
         </section>
     </div>
+
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/analytics');
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                
+                const data = await response.json();
+
+                // 1. Render Sorted Stops Dynamically
+                const stopList = document.getElementById('stop-list');
+                stopList.innerHTML = '';
+                
+                data.stops.forEach(stop => {
+                    const li = document.createElement('li');
+                    let badgeClass = 'green';
+                    if (stop.density >= 80) badgeClass = 'red';
+                    else if (stop.density >= 60) badgeClass = 'orange';
+
+                    li.innerHTML = `
+                        <span>${stop.name}</span>
+                        <span class="badge ${badgeClass}">${stop.density}% Congested (${stop.demand} demand)</span>
+                    `;
+                    stopList.appendChild(li);
+                });
+
+                // 2. Render Minimum Spanning Tree Dynamically
+                const mstContainer = document.getElementById('mst-container');
+                mstContainer.innerHTML = `<p><strong>Total Backbone Congestion Weight: ${data.mst.totalCost}</strong></p>`;
+                
+                data.mst.edges.forEach(edge => {
+                    const div = document.createElement('div');
+                    div.className = 'edge-item';
+                    div.innerHTML = `
+                        <span>Stop ${edge.src} ↔ Stop ${edge.dest}</span>
+                        <span class="weight">Cost Weight: ${edge.weight}</span>
+                    `;
+                    mstContainer.appendChild(div);
+                });
+
+                // 3. Render DP & Search Metrics Dynamically
+                document.getElementById('stat-capacity').textContent = data.dp.maxCapacity + " Units";
+                document.getElementById('stat-cleared').textContent = data.dp.maxClearedPassengers + " / hr";
+                
+                if (data.searchQuery.foundIndex !== -1) {
+                    document.getElementById('stat-search').textContent = `Rank #${data.searchQuery.foundIndex + 1} (${data.searchQuery.targetDensity}%)`;
+                } else {
+                    document.getElementById('stat-search').textContent = "Not Found";
+                }
+
+            } catch (err) {
+                console.error("Failed to fetch C++ dynamic analytics:", err);
+            }
+        }
+
+        // Fetch on load
+        fetchData();
+        // Auto-poll every 5 seconds for real-time dynamic updates
+        setInterval(fetchData, 5000);
+    </script>
 </body>
 </html>
