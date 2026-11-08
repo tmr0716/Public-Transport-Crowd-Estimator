@@ -56,35 +56,7 @@
                 <!-- Visual Map Display -->
                 <div class="map-visualization">
                     <svg id="network-map" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet">
-                        <!-- Connecting Lines -->
-                        <line x1="100" y1="150" x2="250" y2="70" class="path-line" />
-                        <line x1="250" y1="70" x2="400" y2="150" class="path-line active-path" />
-                        <line x1="400" y1="150" x2="500" y2="230" class="path-line active-path" />
-
-                        <!-- Nodes (Stops) -->
-                        <g class="node-group" transform="translate(100, 150)">
-                            <circle r="18" class="node-circle low-crowd"></circle>
-                            <text y="30" class="node-label">Central Terminal</text>
-                            <text y="-25" class="crowd-badge">30% Full</text>
-                        </g>
-
-                        <g class="node-group" transform="translate(250, 70)">
-                            <circle r="18" class="node-circle high-crowd"></circle>
-                            <text y="30" class="node-label">Tech Park</text>
-                            <text y="-25" class="crowd-badge text-red">88% Full</text>
-                        </g>
-
-                        <g class="node-group" transform="translate(400, 150)">
-                            <circle r="18" class="node-circle med-crowd"></circle>
-                            <text y="30" class="node-label">Suburban Hub</text>
-                            <text y="-25" class="crowd-badge text-orange">65% Full</text>
-                        </g>
-
-                        <g class="node-group" transform="translate(500, 230)">
-                            <circle r="18" class="node-circle low-crowd"></circle>
-                            <text y="30" class="node-label">Airport Express</text>
-                            <text y="-25" class="crowd-badge text-green">25% Full</text>
-                        </g>
+                        <!-- Dynamic lines and nodes generated via JavaScript -->
                     </svg>
                 </div>
 
@@ -92,11 +64,11 @@
                 <div class="route-summary">
                     <div class="summary-item">
                         <span class="label">Total Travel Time:</span>
-                        <span id="est-time" class="value">24 mins</span>
+                        <span id="est-time" class="value">-- mins</span>
                     </div>
                     <div class="summary-item">
                         <span class="label">Route Congestion Level:</span>
-                        <span id="est-crowd" class="value badge-status status-moderate">Moderate</span>
+                        <span id="est-crowd" class="value badge-status status-moderate">--%</span>
                     </div>
                 </div>
             </section>
@@ -104,7 +76,7 @@
     </div>
 
     <script>
-        function calculateRoute(event) {
+        async function calculateRoute(event) {
             event.preventDefault();
 
             const start = document.getElementById('start-point').value;
@@ -126,17 +98,75 @@
             btnLoader.classList.remove('hidden');
             resultsCard.classList.add('hidden');
 
-            // Simulate API fetch delay
-            setTimeout(() => {
+            try {
+                // Fetch shortest path calculation from C++ backend endpoint
+                const response = await fetch(`/api/route?start=${start}&end=${end}`);
+                if (!response.ok) throw new Error("Server error");
+                
+                const data = await response.json();
+
+                // 1. Render Summary Details
+                document.getElementById('est-time').textContent = `${data.totalTime} mins`;
+                const crowdElem = document.getElementById('est-crowd');
+                crowdElem.textContent = `${data.avgCrowd}% Density`;
+
+                if (data.avgCrowd >= 75) {
+                    crowdElem.className = 'value badge-status text-red';
+                } else if (data.avgCrowd >= 50) {
+                    crowdElem.className = 'value badge-status status-moderate';
+                } else {
+                    crowdElem.className = 'value badge-status text-green';
+                }
+
+                // 2. Render SVG Map Dynamically
+                const svgMap = document.getElementById('network-map');
+                svgMap.innerHTML = ''; // Clear prior render
+
+                // Draw path lines between calculated stops
+                for (let i = 0; i < data.path.length - 1; i++) {
+                    const u = data.path[i];
+                    const v = data.path[i + 1];
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", u.x);
+                    line.setAttribute("y1", u.y);
+                    line.setAttribute("x2", v.x);
+                    line.setAttribute("y2", v.y);
+                    line.setAttribute("class", "path-line active-path");
+                    svgMap.appendChild(line);
+                }
+
+                // Draw nodes & labels
+                data.path.forEach(node => {
+                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    g.setAttribute("class", "node-group");
+                    g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+
+                    let crowdClass = 'low-crowd';
+                    let textClass = 'text-green';
+                    if (node.density >= 75) { crowdClass = 'high-crowd'; textClass = 'text-red'; }
+                    else if (node.density >= 50) { crowdClass = 'med-crowd'; textClass = 'text-orange'; }
+
+                    g.innerHTML = `
+                        <circle r="18" class="node-circle ${crowdClass}"></circle>
+                        <text y="32" class="node-label">${node.name}</text>
+                        <text y="-25" class="crowd-badge ${textClass}">${node.density}% Full</text>
+                    `;
+                    svgMap.appendChild(g);
+                });
+
+                // Display results card smoothly
+                resultsCard.classList.remove('hidden');
+                resultsCard.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                console.error("Route calculation error:", err);
+                alert("Failed to reach server. Please check backend execution.");
+            } finally {
                 // Reset Button
                 btn.disabled = false;
                 btnText.textContent = "Proceed";
                 btnLoader.classList.add('hidden');
-
-                // Display Results Map Card
-                resultsCard.classList.remove('hidden');
-                resultsCard.scrollIntoView({ behavior: 'smooth' });
-            }, 1200);
+            }
         }
     </script>
 </body>
