@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Transport Crowd Estimator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>Public Transport Crowd Estimator</h1>
+            <p class="subtitle">DAA Project | Graph Optimization, DP & Searching Engine</p>
+        </header>
+
+        <section class="grid-container">
+            <!-- Congestion Ranking Card -->
+            <div class="card">
+                <h2>Live Congestion Ranking (Merge Sort)</h2>
+                <ul class="stop-list">
+                    <li class="high-density">
+                        <span>Tech Park Station</span>
+                        <span class="badge red">92% Congested</span>
+                    </li>
+                    <li class="high-density">
+                        <span>Central Terminal</span>
+                        <span class="badge red">85% Congested</span>
+                    </li>
+                    <li class="med-density">
+                        <span>Suburban Hub</span>
+                        <span class="badge orange">68% Congested</span>
+                    </li>
+                    <li class="low-density">
+                        <span>University Junction</span>
+                        <span class="badge green">45% Congested</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Graph Spanning Tree Card -->
+            <div class="card">
+                <h2>Optimal Minimum Backbone (Kruskal's MST)</h2>
+                <div class="mst-container">
+                    <div class="edge-item">
+                        <span>Stop 1 ↔ Stop 2</span>
+                        <span class="weight">Cost: 5</span>
+                    </div>
+                    <div class="edge-item">
+                        <span>Stop 3 ↔ Stop 4</span>
+                        <span class="weight">Cost: 8</span>
+                    </div>
+                    <div class="edge-item">
+                        <span>Stop 0 ↔ Stop 2</span>
+                        <span class="weight">Cost: 10</span>
+                    </div>
+                    <div class="edge-item">
+                        <span>Stop 2 ↔ Stop 3</span>
+                        <span class="weight">Cost: 20</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DP Capacity Optimization Card -->
+            <div class="card full-width">
+                <h2>Fleet Demand Optimization (Dynamic Programming)</h2>
+                <div class="dp-results">
+                    <div class="stat-box">
+                        <span class="stat-title">Fleet Capacity Budget</span>
+                        <span class="stat-value">50 Units</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-title">Max Passengers Cleared</span>
+                        <span class="stat-value highlight">340 / hr</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-title">Algorithm Time Complexity</span>
+                        <span class="stat-value">O(N × Capacity)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
