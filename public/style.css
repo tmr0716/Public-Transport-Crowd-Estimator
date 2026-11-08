@@ -1,0 +1,135 @@
+:root {
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --accent-blue: #38bdf8;
+    --accent-green: #4ade80;
+    --accent-orange: #fb923c;
+    --accent-red: #f87171;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.dashboard {
+    max-width: 1000px;
+    width: 100%;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+header h1 {
+    font-size: 2.2rem;
+    margin: 0;
+    color: var(--accent-blue);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.card h2 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    color: var(--accent-blue);
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0.5rem;
+}
+
+.stop-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.stop-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #334155;
+}
+
+.badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge.red { background: rgba(248, 113, 113, 0.2); color: var(--accent-red); }
+.badge.orange { background: rgba(251, 146, 60, 0.2); color: var(--accent-orange); }
+.badge.green { background: rgba(74, 222, 128, 0.2); color: var(--accent-green); }
+
+.mst-container .edge-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    color: var(--text-muted);
+}
+
+.weight {
+    color: var(--accent-blue);
+    font-weight: bold;
+}
+
+.dp-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-box {
+    background: #0f172a;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-title {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.stat-value.highlight {
+    color: var(--accent-green);
+}
