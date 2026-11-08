@@ -3,113 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Transport Crowd Estimator</title>
+    <title>Public Transport Route & Crowd Estimator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="dashboard">
-        <header>
-            <h1>Public Transport Crowd Estimator</h1>
-            <p class="subtitle">Dynamic Real-Time DAA Optimization Engine</p>
-            <button id="refresh-btn" onclick="fetchData()">🔄 Sync Live C++ Backend Data</button>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Public Transport Route Finder</h1>
+            <p>Find optimal routes and check real-time crowd levels</p>
         </header>
 
-        <section class="grid-container">
-            <!-- Dynamic Congestion Ranking -->
-            <div class="card">
-                <h2>Live Congestion Ranking (Merge Sort)</h2>
-                <ul id="stop-list" class="stop-list">
-                    <li class="loading">Loading stops from C++ engine...</li>
-                </ul>
-            </div>
+        <!-- Search & Control Card -->
+        <main class="main-content">
+            <section class="card search-card">
+                <h2>Select Travel Route</h2>
+                <form id="route-form" onsubmit="calculateRoute(event)">
+                    <div class="form-group">
+                        <label for="start-point">Starting Point</label>
+                        <select id="start-point" required>
+                            <option value="" disabled selected>Select origin stop...</option>
+                            <option value="0">Central Terminal</option>
+                            <option value="1">Tech Park Station</option>
+                            <option value="2">University Junction</option>
+                            <option value="3">Suburban Hub</option>
+                            <option value="4">Airport Express</option>
+                        </select>
+                    </div>
 
-            <!-- Dynamic Spanning Tree -->
-            <div class="card">
-                <h2>Minimum Spanning Backbone (Kruskal's MST)</h2>
-                <div id="mst-container" class="mst-container">
-                    <div class="loading">Computing MST...</div>
-                </div>
-            </div>
+                    <div class="form-group">
+                        <label for="end-point">Destination</label>
+                        <select id="end-point" required>
+                            <option value="" disabled selected>Select destination stop...</option>
+                            <option value="0">Central Terminal</option>
+                            <option value="1">Tech Park Station</option>
+                            <option value="2">University Junction</option>
+                            <option value="3">Suburban Hub</option>
+                            <option value="4">Airport Express</option>
+                        </select>
+                    </div>
 
-            <!-- Dynamic Fleet Capacity -->
-            <div class="card full-width">
-                <h2>Fleet Capacity Optimization (0/1 Knapsack DP)</h2>
-                <div class="dp-results">
-                    <div class="stat-box">
-                        <span class="stat-title">Fleet Capacity Budget</span>
-                        <span id="stat-capacity" class="stat-value">--</span>
+                    <button type="submit" id="submit-btn" class="primary-btn">
+                        <span id="btn-text">Proceed</span>
+                        <span id="btn-loader" class="loader hidden"></span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Interactive Map & Route Display Card -->
+            <section id="results-card" class="card results-card hidden">
+                <h2>Recommended Route & Crowd Estimation</h2>
+                
+                <!-- Visual Map Display -->
+                <div class="map-visualization">
+                    <svg id="network-map" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet">
+                        <!-- Connecting Lines -->
+                        <line x1="100" y1="150" x2="250" y2="70" class="path-line" />
+                        <line x1="250" y1="70" x2="400" y2="150" class="path-line active-path" />
+                        <line x1="400" y1="150" x2="500" y2="230" class="path-line active-path" />
+
+                        <!-- Nodes (Stops) -->
+                        <g class="node-group" transform="translate(100, 150)">
+                            <circle r="18" class="node-circle low-crowd"></circle>
+                            <text y="30" class="node-label">Central Terminal</text>
+                            <text y="-25" class="crowd-badge">30% Full</text>
+                        </g>
+
+                        <g class="node-group" transform="translate(250, 70)">
+                            <circle r="18" class="node-circle high-crowd"></circle>
+                            <text y="30" class="node-label">Tech Park</text>
+                            <text y="-25" class="crowd-badge text-red">88% Full</text>
+                        </g>
+
+                        <g class="node-group" transform="translate(400, 150)">
+                            <circle r="18" class="node-circle med-crowd"></circle>
+                            <text y="30" class="node-label">Suburban Hub</text>
+                            <text y="-25" class="crowd-badge text-orange">65% Full</text>
+                        </g>
+
+                        <g class="node-group" transform="translate(500, 230)">
+                            <circle r="18" class="node-circle low-crowd"></circle>
+                            <text y="30" class="node-label">Airport Express</text>
+                            <text y="-25" class="crowd-badge text-green">25% Full</text>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Path Summary -->
+                <div class="route-summary">
+                    <div class="summary-item">
+                        <span class="label">Total Travel Time:</span>
+                        <span id="est-time" class="value">24 mins</span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-title">Max Passengers Cleared</span>
-                        <span id="stat-cleared" class="stat-value highlight">--</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-title">Binary Search Lookup</span>
-                        <span id="stat-search" class="stat-value">--</span>
+                    <div class="summary-item">
+                        <span class="label">Route Congestion Level:</span>
+                        <span id="est-crowd" class="value badge-status status-moderate">Moderate</span>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </main>
     </div>
 
     <script>
-        async function fetchData() {
-            try {
-                const response = await fetch('/api/analytics');
-                if (!response.ok) throw new Error("HTTP error " + response.status);
-                
-                const data = await response.json();
+        function calculateRoute(event) {
+            event.preventDefault();
 
-                // 1. Render Sorted Stops Dynamically
-                const stopList = document.getElementById('stop-list');
-                stopList.innerHTML = '';
-                
-                data.stops.forEach(stop => {
-                    const li = document.createElement('li');
-                    let badgeClass = 'green';
-                    if (stop.density >= 80) badgeClass = 'red';
-                    else if (stop.density >= 60) badgeClass = 'orange';
+            const start = document.getElementById('start-point').value;
+            const end = document.getElementById('end-point').value;
 
-                    li.innerHTML = `
-                        <span>${stop.name}</span>
-                        <span class="badge ${badgeClass}">${stop.density}% Congested (${stop.demand} demand)</span>
-                    `;
-                    stopList.appendChild(li);
-                });
-
-                // 2. Render Minimum Spanning Tree Dynamically
-                const mstContainer = document.getElementById('mst-container');
-                mstContainer.innerHTML = `<p><strong>Total Backbone Congestion Weight: ${data.mst.totalCost}</strong></p>`;
-                
-                data.mst.edges.forEach(edge => {
-                    const div = document.createElement('div');
-                    div.className = 'edge-item';
-                    div.innerHTML = `
-                        <span>Stop ${edge.src} ↔ Stop ${edge.dest}</span>
-                        <span class="weight">Cost Weight: ${edge.weight}</span>
-                    `;
-                    mstContainer.appendChild(div);
-                });
-
-                // 3. Render DP & Search Metrics Dynamically
-                document.getElementById('stat-capacity').textContent = data.dp.maxCapacity + " Units";
-                document.getElementById('stat-cleared').textContent = data.dp.maxClearedPassengers + " / hr";
-                
-                if (data.searchQuery.foundIndex !== -1) {
-                    document.getElementById('stat-search').textContent = `Rank #${data.searchQuery.foundIndex + 1} (${data.searchQuery.targetDensity}%)`;
-                } else {
-                    document.getElementById('stat-search').textContent = "Not Found";
-                }
-
-            } catch (err) {
-                console.error("Failed to fetch C++ dynamic analytics:", err);
+            if (start === end) {
+                alert("Please select different starting and destination stops.");
+                return;
             }
-        }
 
-        // Fetch on load
-        fetchData();
-        // Auto-poll every 5 seconds for real-time dynamic updates
-        setInterval(fetchData, 5000);
+            const btn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+            const resultsCard = document.getElementById('results-card');
+
+            // Show Loading State
+            btn.disabled = true;
+            btnText.textContent = "Loading.....";
+            btnLoader.classList.remove('hidden');
+            resultsCard.classList.add('hidden');
+
+            // Simulate API fetch delay
+            setTimeout(() => {
+                // Reset Button
+                btn.disabled = false;
+                btnText.textContent = "Proceed";
+                btnLoader.classList.add('hidden');
+
+                // Display Results Map Card
+                resultsCard.classList.remove('hidden');
+                resultsCard.scrollIntoView({ behavior: 'smooth' });
+            }, 1200);
+        }
     </script>
 </body>
 </html>
