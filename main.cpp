@@ -15,7 +15,7 @@ struct StopNode {
     int id;
     string name;
     int crowdDensity; // Percentage (0 - 100%)
-    int x, y;         // Map SVG coordinates (scaled for 700x360 viewBox)
+    int x, y;         // Map SVG coordinates (720x380 viewBox)
 };
 
 struct Edge {
@@ -33,24 +33,24 @@ class TransitNetwork {
 
 public:
     TransitNetwork() {
-        // Initialize 10 realistic Pune PMPML / Metro stops with well-spaced map coordinates
+        // 10 realistic Pune PMPML / Metro stops with balanced SVG coordinates
         nodes = {
-            {0, "Hinjawadi Phase 1", 85,  80,  70},
-            {1, "Chinchwad",         72, 220,  55},
-            {2, "Aundh",             58, 220, 155},
-            {3, "Shivajinagar",      82, 370, 130},
-            {4, "Manapa",            90, 440, 205},
-            {5, "Deccan Gymkhana",   64, 310, 245},
-            {6, "Kothrud Depot",     45, 130, 285},
-            {7, "Swargate",          88, 430, 305},
-            {8, "Viman Nagar",       52, 590,  95},
-            {9, "Hadapsar",          76, 610, 275}
+            {0, "Hinjawadi Phase 1", 85,  90,  75},
+            {1, "Chinchwad",         72, 235,  55},
+            {2, "Aundh",             58, 235, 165},
+            {3, "Shivajinagar",      82, 385, 135},
+            {4, "Manapa",            90, 455, 215},
+            {5, "Deccan Gymkhana",   64, 320, 260},
+            {6, "Kothrud Depot",     45, 135, 305},
+            {7, "Swargate",          88, 445, 325},
+            {8, "Viman Nagar",       52, 610,  95},
+            {9, "Hadapsar",          76, 625, 290}
         };
 
         V = nodes.size();
         adj.resize(V);
 
-        // Add connecting Pune transit corridors (u, v, travel time in mins)
+        // Bidirectional Pune transit routes (u, v, travel time in mins)
         addRoute(0, 1, 18); // Hinjawadi <-> Chinchwad
         addRoute(0, 2, 16); // Hinjawadi <-> Aundh
         addRoute(1, 2, 14); // Chinchwad <-> Aundh
@@ -73,7 +73,7 @@ public:
         adj[v].push_back({u, time});
     }
 
-    // Returns ALL nodes and ALL edges so frontend can render the unhighlighted base map
+    // Returns ALL stops and ALL edges for rendering the base map
     string getFullNetworkJson() {
         stringstream json;
         json << "{\n  \"nodes\": [";
@@ -89,7 +89,7 @@ public:
         bool firstEdge = true;
         for (int u = 0; u < V; ++u) {
             for (const auto& edge : adj[u]) {
-                if (u < edge.to) { // Avoid duplicate undirected edges
+                if (u < edge.to) {
                     if (!firstEdge) json << ",";
                     json << "{\"from\":" << u
                          << ",\"to\":" << edge.to
@@ -131,21 +131,21 @@ public:
             }
         }
 
-        // Reconstruct path nodes
+        // Reconstruct path
         vector<int> path;
         for (int v = end; v != -1; v = parent[v]) {
             path.push_back(v);
         }
         reverse(path.begin(), path.end());
 
-        // Calculate Average Congestion along path
+        // Calculate average crowd density
         int totalCrowd = 0;
         for (int nodeIdx : path) {
             totalCrowd += nodes[nodeIdx].crowdDensity;
         }
         int avgCrowd = path.empty() ? 0 : totalCrowd / path.size();
 
-        // Build JSON payload for frontend consumption
+        // Build JSON response
         stringstream json;
         json << "{\n";
         json << "  \"totalTime\": " << dist[end] << ",\n";
@@ -173,15 +173,15 @@ int main() {
     httplib::Server svr;
     TransitNetwork network;
 
-    // Serve HTML, CSS, JS from the public folder
+    // Serve static files from ./public
     svr.set_mount_point("/", "./public");
 
-    // Full Network Graph Endpoint (for base unhighlighted map + dropdowns)
+    // Full network endpoint
     svr.Get("/api/network", [&network](const httplib::Request& req, httplib::Response& res) {
         res.set_content(network.getFullNetworkJson(), "application/json");
     });
 
-    // Dynamic Route Calculation API Endpoint
+    // Shortest route calculation endpoint
     svr.Get("/api/route", [&network](const httplib::Request& req, httplib::Response& res) {
         if (req.has_param("start") && req.has_param("end")) {
             try {
