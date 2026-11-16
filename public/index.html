@@ -3,79 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Transport Route & Crowd Estimator</title>
+    <title>Pune Metro & Bus Route Finder</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <header class="app-header">
-            <h1>Public Transport Route Finder</h1>
-            <p>Find optimal routes and check real-time crowd levels</p>
+    <div class="page-wrapper">
+        <!-- Top Navigation Header -->
+        <header class="navbar">
+            <div class="brand-group">
+                <div class="logo-badge">P</div>
+                <div>
+                    <h1>Pune Smart Transit</h1>
+                    <p>Shortest-Time Route &amp; Real-Time Crowd Estimator</p>
+                </div>
+            </div>
+            <div class="crowd-legend">
+                <span class="legend-item"><i class="dot green"></i> Low (&lt;50%)</span>
+                <span class="legend-item"><i class="dot orange"></i> Moderate (50–74%)</span>
+                <span class="legend-item"><i class="dot red"></i> High (&ge;75%)</span>
+            </div>
         </header>
 
-        <!-- Search & Control Card -->
-        <main class="main-content">
-            <section class="card search-card">
-                <h2>Select Travel Route</h2>
-                <form id="route-form" onsubmit="calculateRoute(event)">
-                    <div class="form-group">
-                        <label for="start-point">Starting Point</label>
-                        <select id="start-point" required>
-                            <option value="" disabled selected>Select origin stop...</option>
-                            <option value="0">Central Terminal</option>
-                            <option value="1">Tech Park Station</option>
-                            <option value="2">University Junction</option>
-                            <option value="3">Suburban Hub</option>
-                            <option value="4">Airport Express</option>
-                        </select>
-                    </div>
+        <!-- Top Horizontal Search Bar Card -->
+        <section class="card search-bar-card">
+            <form id="route-form" class="search-form" onsubmit="calculateRoute(event)">
+                <div class="field-group">
+                    <label for="start-point">Origin Stop</label>
+                    <select id="start-point" required>
+                        <option value="" disabled selected>Loading Pune stops...</option>
+                    </select>
+                </div>
 
-                    <div class="form-group">
-                        <label for="end-point">Destination</label>
-                        <select id="end-point" required>
-                            <option value="" disabled selected>Select destination stop...</option>
-                            <option value="0">Central Terminal</option>
-                            <option value="1">Tech Park Station</option>
-                            <option value="2">University Junction</option>
-                            <option value="3">Suburban Hub</option>
-                            <option value="4">Airport Express</option>
-                        </select>
-                    </div>
+                <button type="button" class="swap-btn" onclick="swapStops()" title="Swap origin and destination">⇄</button>
 
+                <div class="field-group">
+                    <label for="end-point">Destination Stop</label>
+                    <select id="end-point" required>
+                        <option value="" disabled selected>Loading Pune stops...</option>
+                    </select>
+                </div>
+
+                <div class="action-group">
                     <button type="submit" id="submit-btn" class="primary-btn">
                         <span id="btn-text">Proceed</span>
                         <span id="btn-loader" class="loader hidden"></span>
                     </button>
-                </form>
-            </section>
-
-            <!-- Interactive Map & Route Display Card -->
-            <section id="results-card" class="card results-card hidden">
-                <h2>Recommended Route & Crowd Estimation</h2>
-                
-                <!-- Visual Map Display -->
-                <div class="map-visualization">
-                    <svg id="network-map" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet">
-                        <!-- Dynamic lines and nodes generated via JavaScript -->
-                    </svg>
+                    <button type="button" id="reset-btn" class="secondary-btn hidden" onclick="resetMap()">Reset</button>
                 </div>
+            </form>
+        </section>
 
-                <!-- Path Summary -->
-                <div class="route-summary">
-                    <div class="summary-item">
-                        <span class="label">Total Travel Time:</span>
-                        <span id="est-time" class="value">-- mins</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="label">Route Congestion Level:</span>
-                        <span id="est-crowd" class="value badge-status status-moderate">--%</span>
-                    </div>
+        <!-- Main Content: Full Map + Route Details -->
+        <main class="content-grid">
+            <!-- Left / Main: Full 10-Stop Pune Network Map -->
+            <section class="card map-card">
+                <div class="card-header">
+                    <h2>Pune Transit Network Map</h2>
+                    <span id="map-badge" class="status-pill neutral">All 10 Stops Visible</span>
+                </div>
+                <div class="svg-container">
+                    <svg id="network-map" viewBox="0 0 720 380" preserveAspectRatio="xMidYMid meet"></svg>
                 </div>
             </section>
+
+            <!-- Right: Summary Metrics & Stop Timeline -->
+            <aside id="results-card" class="card details-card">
+                <div class="card-header">
+                    <h2>Route Summary</h2>
+                </div>
+
+                <div id="empty-state" class="empty-state">
+                    <p>Select an <strong>Origin</strong> and <strong>Destination</strong> above and click <strong>Proceed</strong> to highlight the optimal route and inspect station crowd levels.</p>
+                </div>
+
+                <div id="results-content" class="hidden">
+                    <div class="kpi-grid">
+                        <div class="kpi-box">
+                            <span class="kpi-title">Total Travel Time</span>
+                            <span id="est-time" class="kpi-value">-- mins</span>
+                        </div>
+                        <div class="kpi-box">
+                            <span class="kpi-title">Route Congestion</span>
+                            <span id="est-crowd" class="kpi-value">--%</span>
+                        </div>
+                    </div>
+
+                    <h3 class="sub-heading">Stops Along Route</h3>
+                    <ul id="stop-timeline" class="stop-list"></ul>
+                </div>
+            </aside>
         </main>
     </div>
 
     <script>
+        let fullNetwork = { nodes: [], edges: [] };
+
+        // Load all 10 Pune stops and render full unhighlighted map on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/network');
+                fullNetwork = await res.json();
+
+                const startSelect = document.getElementById('start-point');
+                const endSelect = document.getElementById('end-point');
+                startSelect.innerHTML = '<option value="" disabled selected>Select origin stop...</option>';
+                endSelect.innerHTML = '<option value="" disabled selected>Select destination stop...</option>';
+
+                fullNetwork.nodes.forEach(node => {
+                    startSelect.add(new Option(node.name, node.id));
+                    endSelect.add(new Option(node.name, node.id));
+                });
+
+                renderMap([]);
+            } catch (err) {
+                console.error("Failed to load Pune transit network:", err);
+                document.getElementById('map-badge').textContent = "Server Offline";
+            }
+        });
+
+        function swapStops() {
+            const startSelect = document.getElementById('start-point');
+            const endSelect = document.getElementById('end-point');
+            if (startSelect.value && endSelect.value) {
+                const temp = startSelect.value;
+                startSelect.value = endSelect.value;
+                endSelect.value = temp;
+            }
+        }
+
+        function resetMap() {
+            document.getElementById('route-form').reset();
+            document.getElementById('results-content').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('reset-btn').classList.add('hidden');
+            document.getElementById('map-badge').textContent = "All 10 Stops Visible";
+            document.getElementById('map-badge').className = "status-pill neutral";
+            renderMap([]);
+        }
+
+        // Render full map: all 10 stops always visible, only selected path highlighted
+        function renderMap(activePath) {
+            const svg = document.getElementById('network-map');
+            svg.innerHTML = '';
+
+            const hasSelection = activePath.length > 0;
+            const activeNodeIds = new Set(activePath.map(n => n.id));
+            const activeEdgeKeys = new Set();
+
+            for (let i = 0; i < activePath.length - 1; i++) {
+                const a = activePath[i].id;
+                const b = activePath[i + 1].id;
+                activeEdgeKeys.add(`${Math.min(a, b)}-${Math.max(a, b)}`);
+            }
+
+            // Layer 1: Background edges (all edges before selection, dimmed edges after selection)
+            fullNetwork.edges.forEach(edge => {
+                const u = fullNetwork.nodes[edge.from];
+                const v = fullNetwork.nodes[edge.to];
+                const key = `${Math.min(edge.from, edge.to)}-${Math.max(edge.from, edge.to)}`;
+
+                if (!activeEdgeKeys.has(key)) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", u.x);
+                    line.setAttribute("y1", u.y);
+                    line.setAttribute("x2", v.x);
+                    line.setAttribute("y2", v.y);
+                    line.setAttribute("class", hasSelection ? "edge-dimmed" : "edge-normal");
+                    svg.appendChild(line);
+                }
+            });
+
+            // Layer 2: Highlighted active route lines
+            for (let i = 0; i < activePath.length - 1; i++) {
+                const u = activePath[i];
+                const v = activePath[i + 1];
+
+                const halo = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                halo.setAttribute("x1", u.x);
+                halo.setAttribute("y1", u.y);
+                halo.setAttribute("x2", v.x);
+                halo.setAttribute("y2", v.y);
+                halo.setAttribute("class", "edge-halo");
+                svg.appendChild(halo);
+
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", u.x);
+                line.setAttribute("y1", u.y);
+                line.setAttribute("x2", v.x);
+                line.setAttribute("y2", v.y);
+                line.setAttribute("class", "edge-highlighted");
+                svg.appendChild(line);
+            }
+
+            // Layer 3: All 10 stops (unselected dimmed, selected highlighted)
+            fullNetwork.nodes.forEach(node => {
+                const isHighlighted = activeNodeIds.has(node.id);
+                const isDimmed = hasSelection && !isHighlighted;
+
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
+                g.setAttribute("class", `node-group ${isDimmed ? 'dimmed' : ''} ${isHighlighted ? 'highlighted' : ''}`);
+
+                let level = 'green';
+                if (node.density >= 75) level = 'red';
+                else if (node.density >= 50) level = 'orange';
+
+                const r = isHighlighted ? 14 : 10;
+
+                g.innerHTML = `
+                    <circle r="${r}" class="node-dot ${level}"></circle>
+                    <text y="${r + 16}" class="node-title">${node.name}</text>
+                    ${(!hasSelection || isHighlighted)
+                        ? `<text y="${-r - 7}" class="node-percent ${level}">${node.density}%</text>`
+                        : ''}
+                `;
+                svg.appendChild(g);
+            });
+        }
+
         async function calculateRoute(event) {
             event.preventDefault();
 
@@ -83,86 +228,64 @@
             const end = document.getElementById('end-point').value;
 
             if (start === end) {
-                alert("Please select different starting and destination stops.");
+                alert("Please select different origin and destination stops.");
                 return;
             }
 
             const btn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
             const btnLoader = document.getElementById('btn-loader');
-            const resultsCard = document.getElementById('results-card');
 
-            // Show Loading State
             btn.disabled = true;
-            btnText.textContent = "Loading.....";
+            btnText.textContent = "Loading...";
             btnLoader.classList.remove('hidden');
-            resultsCard.classList.add('hidden');
 
             try {
-                // Fetch shortest path calculation from C++ backend endpoint
                 const response = await fetch(`/api/route?start=${start}&end=${end}`);
                 if (!response.ok) throw new Error("Server error");
-                
                 const data = await response.json();
 
-                // 1. Render Summary Details
+                // Update KPIs
                 document.getElementById('est-time').textContent = `${data.totalTime} mins`;
                 const crowdElem = document.getElementById('est-crowd');
-                crowdElem.textContent = `${data.avgCrowd}% Density`;
+                crowdElem.textContent = `${data.avgCrowd}%`;
+                crowdElem.className = 'kpi-value ' + (
+                    data.avgCrowd >= 75 ? 'text-red' : data.avgCrowd >= 50 ? 'text-orange' : 'text-green'
+                );
 
-                if (data.avgCrowd >= 75) {
-                    crowdElem.className = 'value badge-status text-red';
-                } else if (data.avgCrowd >= 50) {
-                    crowdElem.className = 'value badge-status status-moderate';
-                } else {
-                    crowdElem.className = 'value badge-status text-green';
-                }
+                // Update Map Badge
+                const badge = document.getElementById('map-badge');
+                badge.textContent = `${data.path[0].name} → ${data.path[data.path.length - 1].name}`;
+                badge.className = "status-pill active";
 
-                // 2. Render SVG Map Dynamically
-                const svgMap = document.getElementById('network-map');
-                svgMap.innerHTML = ''; // Clear prior render
-
-                // Draw path lines between calculated stops
-                for (let i = 0; i < data.path.length - 1; i++) {
-                    const u = data.path[i];
-                    const v = data.path[i + 1];
-                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", u.x);
-                    line.setAttribute("y1", u.y);
-                    line.setAttribute("x2", v.x);
-                    line.setAttribute("y2", v.y);
-                    line.setAttribute("class", "path-line active-path");
-                    svgMap.appendChild(line);
-                }
-
-                // Draw nodes & labels
-                data.path.forEach(node => {
-                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                    g.setAttribute("class", "node-group");
-                    g.setAttribute("transform", `translate(${node.x}, ${node.y})`);
-
-                    let crowdClass = 'low-crowd';
-                    let textClass = 'text-green';
-                    if (node.density >= 75) { crowdClass = 'high-crowd'; textClass = 'text-red'; }
-                    else if (node.density >= 50) { crowdClass = 'med-crowd'; textClass = 'text-orange'; }
-
-                    g.innerHTML = `
-                        <circle r="18" class="node-circle ${crowdClass}"></circle>
-                        <text y="32" class="node-label">${node.name}</text>
-                        <text y="-25" class="crowd-badge ${textClass}">${node.density}% Full</text>
+                // Populate Step-by-Step Stop List
+                const list = document.getElementById('stop-timeline');
+                list.innerHTML = '';
+                data.path.forEach((stop, index) => {
+                    const level = stop.density >= 75 ? 'red' : stop.density >= 50 ? 'orange' : 'green';
+                    const tag = index === 0 ? 'Start' : index === data.path.length - 1 ? 'Destination' : `Stop ${index}`;
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="stop-info">
+                            <span class="stop-name">${stop.name}</span>
+                            <span class="stop-role">${tag}</span>
+                        </div>
+                        <span class="crowd-chip ${level}">${stop.density}% Full</span>
                     `;
-                    svgMap.appendChild(g);
+                    list.appendChild(li);
                 });
 
-                // Display results card smoothly
-                resultsCard.classList.remove('hidden');
-                resultsCard.scrollIntoView({ behavior: 'smooth' });
+                // Highlight selected path on the full map
+                renderMap(data.path);
+
+                document.getElementById('empty-state').classList.add('hidden');
+                document.getElementById('results-content').classList.remove('hidden');
+                document.getElementById('reset-btn').classList.remove('hidden');
 
             } catch (err) {
                 console.error("Route calculation error:", err);
-                alert("Failed to reach server. Please check backend execution.");
+                alert("Failed to reach server. Please ensure the C++ server is running.");
             } finally {
-                // Reset Button
                 btn.disabled = false;
                 btnText.textContent = "Proceed";
                 btnLoader.classList.add('hidden');
