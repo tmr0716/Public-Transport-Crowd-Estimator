@@ -73,7 +73,7 @@ public:
         adj[v].push_back({u, time});
     }
 
-    // Returns ALL stops and ALL edges for rendering the base map
+    // Returns ALL stops and ALL edges for rendering the full network map
     string getFullNetworkJson() {
         stringstream json;
         json << "{\n  \"nodes\": [";
