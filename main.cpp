@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <queue>
 #include <sstream>
 
 using namespace std;
@@ -23,13 +22,67 @@ struct Edge {
     int travelTimeMinutes;
 };
 
+struct KruskalEdge {
+    int u, v;
+    int travelTimeMinutes;
+    double weight;
+
+    bool operator<(const KruskalEdge& other) const {
+        return weight < other.weight;
+    }
+};
+
+// Disjoint Set Union (Union-Find) for Cycle Detection in Kruskal's Algorithm
+class DSU {
+    vector<int> parent;
+public:
+    DSU(int n) : parent(n) {
+        for (int i = 0; i < n; ++i) parent[i] = i;
+    }
+
+    int find(int x) {
+        if (parent[x] == x) return x;
+        return parent[x] = find(parent[x]); // Path compression
+    }
+
+    bool unite(int x, int y) {
+        int rootX = find(x);
+        int rootY = find(y);
+        if (rootX == rootY) return false; // Cycle detected
+        parent[rootX] = rootY;
+        return true;
+    }
+};
+
 // ============================================================================
-// 2. GRAPH NETWORK & SHORTEST PATH LOGIC (PUNE TRANSIT NETWORK)
+// 2. GRAPH NETWORK & KRUSKAL'S ALGORITHM LOGIC
 // ============================================================================
 class TransitNetwork {
     int V;
     vector<StopNode> nodes;
     vector<vector<Edge>> adj;
+
+    // DFS helper to extract the unique path between start and end inside Kruskal's MST
+    bool findPathInMST(int curr, int target, vector<vector<Edge>>& mstAdj,
+                       vector<bool>& visited, vector<int>& path, int& totalTime) {
+        visited[curr] = true;
+        path.push_back(curr);
+
+        if (curr == target) return true;
+
+        for (const auto& edge : mstAdj[curr]) {
+            if (!visited[edge.to]) {
+                totalTime += edge.travelTimeMinutes;
+                if (findPathInMST(edge.to, target, mstAdj, visited, path, totalTime)) {
+                    return true;
+                }
+                totalTime -= edge.travelTimeMinutes;
+            }
+        }
+
+        path.pop_back();
+        return false;
+    }
 
 public:
     TransitNetwork() {
@@ -59,150 +112,4 @@ public:
         addRoute(2, 5, 15); // Aundh <-> Deccan Gymkhana
         addRoute(3, 4,  8); // Shivajinagar <-> Manapa
         addRoute(3, 8, 20); // Shivajinagar <-> Viman Nagar
-        addRoute(4, 5, 10); // Manapa <-> Deccan Gymkhana
-        addRoute(4, 7, 12); // Manapa <-> Swargate
-        addRoute(4, 9, 24); // Manapa <-> Hadapsar
-        addRoute(5, 6, 14); // Deccan Gymkhana <-> Kothrud Depot
-        addRoute(5, 7, 13); // Deccan Gymkhana <-> Swargate
-        addRoute(7, 9, 22); // Swargate <-> Hadapsar
-        addRoute(8, 9, 25); // Viman Nagar <-> Hadapsar
-    }
-
-    void addRoute(int u, int v, int time) {
-        adj[u].push_back({v, time});
-        adj[v].push_back({u, time});
-    }
-
-    // Returns ALL stops and ALL edges for rendering the full network map
-    string getFullNetworkJson() {
-        stringstream json;
-        json << "{\n  \"nodes\": [";
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            json << "{\"id\":" << nodes[i].id
-                 << ",\"name\":\"" << nodes[i].name << "\""
-                 << ",\"density\":" << nodes[i].crowdDensity
-                 << ",\"x\":" << nodes[i].x
-                 << ",\"y\":" << nodes[i].y << "}";
-            if (i < nodes.size() - 1) json << ",";
-        }
-        json << "],\n  \"edges\": [";
-        bool firstEdge = true;
-        for (int u = 0; u < V; ++u) {
-            for (const auto& edge : adj[u]) {
-                if (u < edge.to) {
-                    if (!firstEdge) json << ",";
-                    json << "{\"from\":" << u
-                         << ",\"to\":" << edge.to
-                         << ",\"time\":" << edge.travelTimeMinutes << "}";
-                    firstEdge = false;
-                }
-            }
-        }
-        json << "]\n}";
-        return json.str();
-    }
-
-    // Shortest Path Computation (Dijkstra's Algorithm)
-    string findOptimalRouteJson(int start, int end) {
-        if (start < 0 || start >= V || end < 0 || end >= V) {
-            return "{\"error\":\"Invalid stop ID\"}";
-        }
-
-        vector<int> dist(V, 1e9);
-        vector<int> parent(V, -1);
-        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
-
-        dist[start] = 0;
-        pq.push({0, start});
-
-        while (!pq.empty()) {
-            int u = pq.top().second;
-            int d = pq.top().first;
-            pq.pop();
-
-            if (d > dist[u]) continue;
-
-            for (const auto& edge : adj[u]) {
-                if (dist[u] + edge.travelTimeMinutes < dist[edge.to]) {
-                    dist[edge.to] = dist[u] + edge.travelTimeMinutes;
-                    parent[edge.to] = u;
-                    pq.push({dist[edge.to], edge.to});
-                }
-            }
-        }
-
-        // Reconstruct path
-        vector<int> path;
-        for (int v = end; v != -1; v = parent[v]) {
-            path.push_back(v);
-        }
-        reverse(path.begin(), path.end());
-
-        // Calculate average crowd density
-        int totalCrowd = 0;
-        for (int nodeIdx : path) {
-            totalCrowd += nodes[nodeIdx].crowdDensity;
-        }
-        int avgCrowd = path.empty() ? 0 : totalCrowd / path.size();
-
-        // Build JSON response
-        stringstream json;
-        json << "{\n";
-        json << "  \"totalTime\": " << dist[end] << ",\n";
-        json << "  \"avgCrowd\": " << avgCrowd << ",\n";
-        json << "  \"path\": [";
-        for (size_t i = 0; i < path.size(); ++i) {
-            int id = path[i];
-            json << "{\"id\":" << nodes[id].id
-                 << ",\"name\":\"" << nodes[id].name << "\""
-                 << ",\"density\":" << nodes[id].crowdDensity
-                 << ",\"x\":" << nodes[id].x
-                 << ",\"y\":" << nodes[id].y << "}";
-            if (i < path.size() - 1) json << ",";
-        }
-        json << "]\n}";
-
-        return json.str();
-    }
-};
-
-// ============================================================================
-// 3. MAIN SERVER ROUTER
-// ============================================================================
-int main() {
-    httplib::Server svr;
-    TransitNetwork network;
-
-    // Serve static files from ./public
-    svr.set_mount_point("/", "./public");
-
-    // Full network endpoint
-    svr.Get("/api/network", [&network](const httplib::Request& req, httplib::Response& res) {
-        res.set_content(network.getFullNetworkJson(), "application/json");
-    });
-
-    // Shortest route calculation endpoint
-    svr.Get("/api/route", [&network](const httplib::Request& req, httplib::Response& res) {
-        if (req.has_param("start") && req.has_param("end")) {
-            try {
-                int start = stoi(req.get_param_value("start"));
-                int end = stoi(req.get_param_value("end"));
-                string jsonResult = network.findOptimalRouteJson(start, end);
-                res.set_content(jsonResult, "application/json");
-            } catch (...) {
-                res.status = 400;
-                res.set_content("{\"error\":\"Invalid numeric parameter\"}", "application/json");
-            }
-        } else {
-            res.status = 400;
-            res.set_content("{\"error\":\"Missing start or end parameter\"}", "application/json");
-        }
-    });
-
-    cout << "=========================================================\n";
-    cout << " Pune Public Transport Server running on http://localhost:8080\n";
-    cout << "=========================================================\n";
-
-    svr.listen("0.0.0.0", 8080);
-    return 0;
-}
+        addRoute(4, 5, 10);
