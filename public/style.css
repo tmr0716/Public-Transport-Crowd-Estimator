@@ -81,7 +81,6 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Centered focused layout when only Origin & Destination selection is shown */
 .page-wrapper.initial-view {
     max-width: 780px;
     min-height: calc(100vh - 3rem);
@@ -191,7 +190,7 @@ body {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 1.4rem 1.5rem;
+    padding: 1.35rem 1.5rem;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
@@ -319,10 +318,10 @@ select:focus {
     border-color: var(--text-muted);
 }
 
-/* Results Workspace (Map + Summary) */
+/* Results Workspace */
 .content-grid {
     display: grid;
-    grid-template-columns: 1.55fr 1fr;
+    grid-template-columns: 1.5fr 1fr;
     gap: 1.25rem;
     align-items: start;
     animation: fadeIn 0.35s ease;
@@ -436,28 +435,28 @@ select:focus {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.15rem;
 }
 
 .kpi-box {
     background: var(--bg-subtle);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 0.85rem;
+    padding: 0.8rem 0.9rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
 }
 
 .kpi-title {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
 }
 
 .kpi-value {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: var(--primary);
 }
@@ -467,26 +466,26 @@ select:focus {
 .text-red { color: var(--red) !important; }
 
 .sub-heading {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.65rem;
 }
 
 .stop-list {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.5rem;
 }
 
 .stop-list li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.65rem 0.85rem;
+    padding: 0.6rem 0.85rem;
     background: var(--bg-subtle);
     border: 1px solid var(--border);
     border-left: 4px solid var(--primary);
@@ -499,21 +498,22 @@ select:focus {
 }
 
 .stop-name {
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text-main);
 }
 
 .stop-role {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
 }
 
 .crowd-chip {
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    padding: 0.25rem 0.65rem;
+    padding: 0.24rem 0.62rem;
     border-radius: 999px;
+    white-space: nowrap;
 }
 
 .crowd-chip.green { background: var(--green-bg); color: var(--green); }
@@ -521,136 +521,143 @@ select:focus {
 .crowd-chip.red { background: var(--red-bg); color: var(--red); }
 
 /* ============================================================================
-   BUS CROWD ESTIMATION SECTION (NEW ADDITION)
+   BUS CROWD ESTIMATION CARD (CLEAN & COMPACT)
    ============================================================================ */
-.bus-estimation-section {
-    margin-top: 1.35rem;
-    padding-top: 1.15rem;
+.bus-section {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
     border-top: 1px solid var(--border);
 }
 
-.bus-section-header {
+.bus-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.65rem;
     gap: 0.5rem;
 }
 
-.bus-card-box {
+.bus-header .sub-heading {
+    margin-bottom: 0;
+}
+
+.bus-panel {
     background: var(--bg-subtle);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 0.95rem 1rem;
+    padding: 0.9rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.8rem;
 }
 
-.bus-detail-row {
+.bus-top-meta {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 0.75rem;
-    font-size: 0.85rem;
 }
 
-.bus-detail-label {
-    color: var(--text-muted);
-    font-weight: 600;
-    white-space: nowrap;
+.bus-meta-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
-.bus-detail-val {
-    color: var(--text-main);
-    font-weight: 700;
+.bus-meta-block.align-right {
     text-align: right;
+    align-items: flex-end;
+}
+
+.meta-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
 }
 
 .bus-plate {
+    display: inline-block;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-main);
     background: var(--bg-card);
     border: 1px solid var(--border);
-    padding: 0.15rem 0.5rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 6px;
-    font-size: 0.82rem;
-    letter-spacing: 0.03em;
 }
 
-.bus-route-text {
+.bus-route-val {
     font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-main);
     line-height: 1.35;
 }
 
-.bus-stats-grid {
+.bus-metrics-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
-    padding-top: 0.65rem;
-    border-top: 1px dashed var(--border);
 }
 
-@media (max-width: 480px) {
-    .bus-stats-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.bus-stat-item {
+.bus-mini-box {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 0.55rem 0.65rem;
+    padding: 0.5rem 0.6rem;
+    text-align: center;
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
 }
 
-.bus-stat-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--text-muted);
+.mini-label {
+    font-size: 0.66rem;
+    font-weight: 700;
     text-transform: uppercase;
+    color: var(--text-muted);
 }
 
-.bus-stat-num {
+.mini-val {
     font-size: 1.05rem;
     font-weight: 800;
     color: var(--text-main);
 }
 
-.bus-progress-wrap {
+.bus-bar-group {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
 }
 
-.bus-progress-labels {
+.bus-bar-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.78rem;
-    color: var(--text-muted);
     font-weight: 600;
+    color: var(--text-muted);
 }
 
-.bus-progress-track {
+.bus-bar-track {
     width: 100%;
-    height: 9px;
+    height: 8px;
     background: var(--border);
     border-radius: 999px;
     overflow: hidden;
 }
 
-.bus-progress-fill {
+.bus-bar-fill {
     height: 100%;
     border-radius: 999px;
-    transition: width 0.4s ease, background-color 0.3s ease;
+    transition: width 0.35s ease, background-color 0.25s ease;
 }
 
-.bus-progress-fill.green { background-color: var(--green); }
-.bus-progress-fill.orange { background-color: var(--orange); }
-.bus-progress-fill.red { background-color: var(--red); }
+.bus-bar-fill.green { background-color: var(--green); }
+.bus-bar-fill.orange { background-color: var(--orange); }
+.bus-bar-fill.red { background-color: var(--red); }
 
 /* Utilities */
 .loader {
