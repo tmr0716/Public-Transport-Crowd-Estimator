@@ -14,7 +14,7 @@
                 <div class="logo-badge">P</div>
                 <div>
                     <h1>Pune Smart Transit</h1>
-                    <p>Shortest-Time Route &amp; Crowd Estimator</p>
+                    <p>Crowd-Aware Route &amp; Congestion Estimator</p>
                 </div>
             </div>
 
@@ -32,11 +32,11 @@
             </div>
         </header>
 
-        <!-- Starting & Destination Selection Card (Visible Immediately on Load) -->
+        <!-- Starting & Destination Selection Card (Only Card Shown on Initial Load) -->
         <section class="card search-bar-card">
             <div class="search-intro">
                 <h2>Where are you travelling today?</h2>
-                <p>Choose your origin and destination stop in Pune to calculate the fastest route.</p>
+                <p>Select your starting stop and destination in Pune to find the least congested route.</p>
             </div>
 
             <form id="route-form" class="search-form" onsubmit="calculateRoute(event)">
@@ -68,7 +68,7 @@
 
         <!-- Map & Summary Section (Hidden until Proceed is clicked) -->
         <main id="results-workspace" class="content-grid hidden">
-            <!-- Left: Full 10-Stop Pune Network Map (Selected Route Highlighted, No Percentages) -->
+            <!-- Left: Full 10-Stop Pune Network Map (No Percentages on Map, Active Route Highlighted) -->
             <section class="card map-card">
                 <div class="card-header">
                     <h2>Pune Transit Network Map</h2>
@@ -164,7 +164,6 @@
             }
         }
 
-        // Return to clean selection-only view
         function resetView() {
             document.getElementById('route-form').reset();
             document.getElementById('results-workspace').classList.add('hidden');
@@ -173,7 +172,7 @@
             document.getElementById('app-wrapper').classList.add('initial-view');
         }
 
-        // Render full 10-stop map with ONLY selected path highlighted & NO percentages on graph
+        // Render full 10-stop map with ONLY selected path highlighted & NO percentages on map
         function renderMap(activePath) {
             const svg = document.getElementById('network-map');
             svg.innerHTML = '';
@@ -270,6 +269,12 @@
                 const response = await fetch(`/api/route?start=${start}&end=${end}`);
                 if (!response.ok) throw new Error("Server error");
                 const data = await response.json();
+
+                // Sync live random crowd densities across all 10 nodes on map
+                if (data.nodes && data.edges) {
+                    fullNetwork.nodes = data.nodes;
+                    fullNetwork.edges = data.edges;
+                }
 
                 // Update Summary KPIs
                 document.getElementById('est-time').textContent = `${data.totalTime} mins`;
