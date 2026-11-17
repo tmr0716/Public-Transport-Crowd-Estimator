@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pune Smart Transit — Route & Crowd Estimator</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
     <div id="app-wrapper" class="page-wrapper initial-view">
@@ -32,7 +32,7 @@
             </div>
         </header>
 
-        <!-- Starting & Destination Selection Card (Only Card Shown on Initial Load) -->
+        <!-- Starting & Destination Selection Card -->
         <section class="card search-bar-card">
             <div class="search-intro">
                 <h2>Where are you travelling today?</h2>
@@ -68,7 +68,7 @@
 
         <!-- Map & Summary Section (Hidden until Proceed is clicked) -->
         <main id="results-workspace" class="content-grid hidden">
-            <!-- Left: Full 10-Stop Pune Network Map (No Percentages on Map, Active Route Highlighted) -->
+            <!-- Left: Full 10-Stop Pune Network Map -->
             <section class="card map-card">
                 <div class="card-header">
                     <h2>Pune Transit Network Map</h2>
@@ -99,45 +99,47 @@
                 <h3 class="sub-heading">Stops Along Route</h3>
                 <ul id="stop-timeline" class="stop-list"></ul>
 
-                <!-- New Feature: Bus Crowd Estimation (Kept Separate from Stop Crowd) -->
-                <div id="bus-crowd-section" class="bus-estimation-section">
-                    <div class="bus-section-header">
-                        <h3 class="sub-heading" style="margin-bottom: 0;">Bus Crowd Estimation</h3>
+                <!-- Bus Crowd Estimation Section (Separate from Stop Crowd) -->
+                <div id="bus-crowd-section" class="bus-section">
+                    <div class="bus-header">
+                        <h3 class="sub-heading">Bus Crowd Estimation</h3>
                         <span id="bus-status-badge" class="crowd-chip green">LOW CROWD</span>
                     </div>
 
-                    <div class="bus-card-box">
-                        <div class="bus-detail-row">
-                            <span class="bus-detail-label">Bus Number</span>
-                            <span id="bus-number" class="bus-detail-val bus-plate">--</span>
-                        </div>
-                        <div class="bus-detail-row">
-                            <span class="bus-detail-label">Bus Route</span>
-                            <span id="bus-route" class="bus-detail-val bus-route-text">--</span>
-                        </div>
-
-                        <div class="bus-stats-grid">
-                            <div class="bus-stat-item">
-                                <span class="bus-stat-label">Passengers Inside</span>
-                                <span id="bus-passengers" class="bus-stat-num">--</span>
+                    <div class="bus-panel">
+                        <div class="bus-top-meta">
+                            <div class="bus-meta-block">
+                                <span class="meta-label">Bus Number</span>
+                                <span id="bus-number" class="bus-plate">--</span>
                             </div>
-                            <div class="bus-stat-item">
-                                <span class="bus-stat-label">Max Capacity</span>
-                                <span id="bus-capacity" class="bus-stat-num">--</span>
-                            </div>
-                            <div class="bus-stat-item">
-                                <span class="bus-stat-label">Available Seats</span>
-                                <span id="bus-seats" class="bus-stat-num">--</span>
+                            <div class="bus-meta-block align-right">
+                                <span class="meta-label">Bus Route</span>
+                                <span id="bus-route" class="bus-route-val">--</span>
                             </div>
                         </div>
 
-                        <div class="bus-progress-wrap">
-                            <div class="bus-progress-labels">
+                        <div class="bus-metrics-row">
+                            <div class="bus-mini-box">
+                                <span class="mini-label">Passengers</span>
+                                <span id="bus-passengers" class="mini-val">--</span>
+                            </div>
+                            <div class="bus-mini-box">
+                                <span class="mini-label">Capacity</span>
+                                <span id="bus-capacity" class="mini-val">--</span>
+                            </div>
+                            <div class="bus-mini-box">
+                                <span class="mini-label">Seats Free</span>
+                                <span id="bus-seats" class="mini-val">--</span>
+                            </div>
+                        </div>
+
+                        <div class="bus-bar-group">
+                            <div class="bus-bar-info">
                                 <span>Bus Occupancy</span>
                                 <strong id="bus-occupancy-pct">--%</strong>
                             </div>
-                            <div class="bus-progress-track">
-                                <div id="bus-progress-bar" class="bus-progress-fill green" style="width: 0%;"></div>
+                            <div class="bus-bar-track">
+                                <div id="bus-progress-bar" class="bus-bar-fill green" style="width: 0%;"></div>
                             </div>
                         </div>
                     </div>
@@ -149,7 +151,6 @@
     <script>
         let fullNetwork = { nodes: [], edges: [] };
 
-        // Apply saved theme on startup
         (function initTheme() {
             const savedTheme = localStorage.getItem('transit-theme') || 'light';
             if (savedTheme === 'dark') {
@@ -178,7 +179,6 @@
             }
         }
 
-        // Load Pune stops into dropdowns on page load (keep map & summary hidden)
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const res = await fetch('/api/network');
@@ -208,7 +208,6 @@
             }
         }
 
-        // Return to clean selection-only view
         function resetView() {
             document.getElementById('route-form').reset();
             document.getElementById('results-workspace').classList.add('hidden');
@@ -217,7 +216,6 @@
             document.getElementById('app-wrapper').classList.add('initial-view');
         }
 
-        // Render full 10-stop map with ONLY selected path highlighted & NO percentages on map
         function renderMap(activePath) {
             const svg = document.getElementById('network-map');
             svg.innerHTML = '';
@@ -231,7 +229,6 @@
                 activeEdgeKeys.add(`${Math.min(a, b)}-${Math.max(a, b)}`);
             }
 
-            // Layer 1: Unselected background edges (dimmed)
             fullNetwork.edges.forEach(edge => {
                 const u = fullNetwork.nodes[edge.from];
                 const v = fullNetwork.nodes[edge.to];
@@ -248,7 +245,6 @@
                 }
             });
 
-            // Layer 2: Highlighted active route lines
             for (let i = 0; i < activePath.length - 1; i++) {
                 const u = activePath[i];
                 const v = activePath[i + 1];
@@ -270,7 +266,6 @@
                 svg.appendChild(line);
             }
 
-            // Layer 3: All 10 stops (no percentage text shown on map)
             fullNetwork.nodes.forEach(node => {
                 const isHighlighted = activeNodeIds.has(node.id);
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -291,7 +286,6 @@
             });
         }
 
-        // Update Bus Crowd Estimation UI (separate from Stop Crowd Estimation)
         function updateBusCrowdSection(busData, path) {
             const maxCapacity = busData?.maxCapacity ?? 60;
             const passengersInside = busData?.passengersInside ?? Math.floor(Math.random() * 48) + 10;
@@ -327,7 +321,7 @@
 
             const progressBar = document.getElementById('bus-progress-bar');
             progressBar.style.width = `${Math.min(100, occupancyPercent)}%`;
-            progressBar.className = `bus-progress-fill ${level}`;
+            progressBar.className = `bus-bar-fill ${level}`;
         }
 
         async function calculateRoute(event) {
@@ -354,13 +348,11 @@
                 if (!response.ok) throw new Error("Server error");
                 const data = await response.json();
 
-                // Sync live random crowd densities across all 10 nodes on map
                 if (data.nodes && data.edges) {
                     fullNetwork.nodes = data.nodes;
                     fullNetwork.edges = data.edges;
                 }
 
-                // Update Summary KPIs (Stop-level route congestion)
                 document.getElementById('est-time').textContent = `${data.totalTime} mins`;
                 const crowdElem = document.getElementById('est-crowd');
                 crowdElem.textContent = `${data.avgCrowd}%`;
@@ -368,11 +360,9 @@
                     data.avgCrowd >= 75 ? 'text-red' : data.avgCrowd >= 50 ? 'text-orange' : 'text-green'
                 );
 
-                // Update Map Header Badge
                 document.getElementById('map-badge').textContent =
                     `${data.path[0].name} → ${data.path[data.path.length - 1].name}`;
 
-                // Populate Step-by-Step Stop List (Stop Crowd Estimation)
                 const list = document.getElementById('stop-timeline');
                 list.innerHTML = '';
                 data.path.forEach((stop, index) => {
@@ -390,10 +380,8 @@
                     list.appendChild(li);
                 });
 
-                // Populate Bus Crowd Estimation (Separate Section)
                 updateBusCrowdSection(data.bus, data.path);
 
-                // Render Map & Reveal Workspace
                 renderMap(data.path);
                 document.getElementById('app-wrapper').classList.remove('initial-view');
                 document.getElementById('results-workspace').classList.remove('hidden');
