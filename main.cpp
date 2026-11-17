@@ -15,13 +15,23 @@ using namespace std;
 struct StopNode {
     int id;
     string name;
-    int crowdDensity; // Dynamic random percentage (15% - 95%)
+    int crowdDensity; // Stop crowd percentage (15% - 95%) - kept separate from bus
     int x, y;         // Map SVG coordinates (720x380 viewBox)
 };
 
 struct Edge {
     int to;
     int travelTimeMinutes;
+};
+
+struct BusInfo {
+    string busNumber;
+    string busRoute;
+    int passengersInside;
+    int maxCapacity;
+    int availableSeats;
+    int occupancyPercent;
+    string crowdStatus;
 };
 
 struct KruskalEdge {
@@ -71,6 +81,47 @@ class TransitNetwork {
         for (auto& node : nodes) {
             node.crowdDensity = dist(rng);
         }
+    }
+
+    // Separate Bus Crowd Estimation generator (independent of Stop crowdDensity)
+    BusInfo generateBusEstimation(const vector<int>& path) {
+        static const vector<string> puneBusNumbers = {
+            "MH-12 AB 1234",
+            "MH-12 PQ 4521",
+            "MH-12 RN 7890",
+            "MH-14 GD 3319",
+            "MH-12 SF 6042",
+            "MH-14 JX 9184"
+        };
+
+        uniform_int_distribution<size_t> busDist(0, puneBusNumbers.size() - 1);
+        int maxCap = 60;
+        uniform_int_distribution<int> passDist(10, 58);
+
+        BusInfo bus;
+        bus.busNumber = puneBusNumbers[busDist(rng)];
+
+        stringstream routeStr;
+        for (size_t i = 0; i < path.size(); ++i) {
+            routeStr << nodes[path[i]].name;
+            if (i < path.size() - 1) routeStr << " \xE2\x86\x92 "; // UTF-8 right arrow
+        }
+        bus.busRoute = routeStr.str();
+
+        bus.maxCapacity = maxCap;
+        bus.passengersInside = passDist(rng);
+        bus.availableSeats = max(0, bus.maxCapacity - bus.passengersInside);
+        bus.occupancyPercent = static_cast<int>(round((static_cast<double>(bus.passengersInside) / bus.maxCapacity) * 100.0));
+
+        if (bus.occupancyPercent <= 40) {
+            bus.crowdStatus = "LOW CROWD";
+        } else if (bus.occupancyPercent <= 70) {
+            bus.crowdStatus = "MODERATE CROWD";
+        } else {
+            bus.crowdStatus = "HIGH CROWD";
+        }
+
+        return bus;
     }
 
     // Helper to serialize all nodes & edges
@@ -126,7 +177,7 @@ class TransitNetwork {
 
 public:
     TransitNetwork() : rng(random_device{}()) {
-        // 10 realistic Pune PMPML / Metro stops
+        // 10 realistic Pune PMPML / Metro stops with balanced SVG coordinates
         nodes = {
             {0, "Hinjawadi Phase 1", 50,  90,  75},
             {1, "Chinchwad",         50, 235,  55},
@@ -189,8 +240,6 @@ public:
         for (int u = 0; u < V; ++u) {
             for (const auto& edge : adj[u]) {
                 if (u < edge.to) {
-                    // Penalize the bottleneck (highest-crowd stop) on this link,
-                    // ignoring start/end themselves so intermediate low-crowd detours win
                     int effectiveCrowd = 0;
                     if (u != start && u != end) effectiveCrowd = max(effectiveCrowd, nodes[u].crowdDensity);
                     if (edge.to != start && edge.to != end) effectiveCrowd = max(effectiveCrowd, nodes[edge.to].crowdDensity);
@@ -225,14 +274,17 @@ public:
         int totalTime = 0;
         findPathInMST(start, end, mstAdj, visited, path, totalTime);
 
-        // 5. Calculate average congestion along the chosen path
+        // 5. Calculate average stop congestion along the chosen path (kept separate from bus)
         int totalCrowd = 0;
         for (int nodeIdx : path) {
             totalCrowd += nodes[nodeIdx].crowdDensity;
         }
         int avgCrowd = path.empty() ? 0 : totalCrowd / path.size();
 
-        // 6. Build JSON response (includes updated random network + computed path)
+        // 6. Generate independent Bus Crowd Estimation for this route
+        BusInfo bus = generateBusEstimation(path);
+
+        // 7. Build JSON response
         stringstream json;
         json << "{\n";
         json << "  \"totalTime\": " << totalTime << ",\n";
@@ -248,7 +300,17 @@ public:
                  << ",\"y\":" << nodes[id].y << "}";
             if (i < path.size() - 1) json << ",";
         }
-        json << "]\n}";
+        json << "],\n";
+        json << "  \"bus\": {\n";
+        json << "    \"busNumber\": \"" << bus.busNumber << "\",\n";
+        json << "    \"busRoute\": \"" << bus.busRoute << "\",\n";
+        json << "    \"passengersInside\": " << bus.passengersInside << ",\n";
+        json << "    \"maxCapacity\": " << bus.maxCapacity << ",\n";
+        json << "    \"availableSeats\": " << bus.availableSeats << ",\n";
+        json << "    \"occupancyPercent\": " << bus.occupancyPercent << ",\n";
+        json << "    \"crowdStatus\": \"" << bus.crowdStatus << "\"\n";
+        json << "  }\n";
+        json << "}";
 
         return json.str();
     }
