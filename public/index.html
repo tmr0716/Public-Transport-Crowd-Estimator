@@ -79,7 +79,7 @@
                 </div>
             </section>
 
-            <!-- Right: Route Summary & Stop Breakdown -->
+            <!-- Right: Route Summary, Stop Breakdown & Bus Crowd Estimation -->
             <aside class="card details-card">
                 <div class="card-header">
                     <h2>Route Summary</h2>
@@ -98,6 +98,50 @@
 
                 <h3 class="sub-heading">Stops Along Route</h3>
                 <ul id="stop-timeline" class="stop-list"></ul>
+
+                <!-- New Feature: Bus Crowd Estimation (Kept Separate from Stop Crowd) -->
+                <div id="bus-crowd-section" class="bus-estimation-section">
+                    <div class="bus-section-header">
+                        <h3 class="sub-heading" style="margin-bottom: 0;">Bus Crowd Estimation</h3>
+                        <span id="bus-status-badge" class="crowd-chip green">LOW CROWD</span>
+                    </div>
+
+                    <div class="bus-card-box">
+                        <div class="bus-detail-row">
+                            <span class="bus-detail-label">Bus Number</span>
+                            <span id="bus-number" class="bus-detail-val bus-plate">--</span>
+                        </div>
+                        <div class="bus-detail-row">
+                            <span class="bus-detail-label">Bus Route</span>
+                            <span id="bus-route" class="bus-detail-val bus-route-text">--</span>
+                        </div>
+
+                        <div class="bus-stats-grid">
+                            <div class="bus-stat-item">
+                                <span class="bus-stat-label">Passengers Inside</span>
+                                <span id="bus-passengers" class="bus-stat-num">--</span>
+                            </div>
+                            <div class="bus-stat-item">
+                                <span class="bus-stat-label">Max Capacity</span>
+                                <span id="bus-capacity" class="bus-stat-num">--</span>
+                            </div>
+                            <div class="bus-stat-item">
+                                <span class="bus-stat-label">Available Seats</span>
+                                <span id="bus-seats" class="bus-stat-num">--</span>
+                            </div>
+                        </div>
+
+                        <div class="bus-progress-wrap">
+                            <div class="bus-progress-labels">
+                                <span>Bus Occupancy</span>
+                                <strong id="bus-occupancy-pct">--%</strong>
+                            </div>
+                            <div class="bus-progress-track">
+                                <div id="bus-progress-bar" class="bus-progress-fill green" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </aside>
         </main>
     </div>
@@ -164,6 +208,7 @@
             }
         }
 
+        // Return to clean selection-only view
         function resetView() {
             document.getElementById('route-form').reset();
             document.getElementById('results-workspace').classList.add('hidden');
@@ -246,6 +291,45 @@
             });
         }
 
+        // Update Bus Crowd Estimation UI (separate from Stop Crowd Estimation)
+        function updateBusCrowdSection(busData, path) {
+            const maxCapacity = busData?.maxCapacity ?? 60;
+            const passengersInside = busData?.passengersInside ?? Math.floor(Math.random() * 48) + 10;
+            const availableSeats = Math.max(0, maxCapacity - passengersInside);
+            const occupancyPercent = Math.round((passengersInside / maxCapacity) * 100);
+
+            let level = 'green';
+            let statusLabel = 'LOW CROWD';
+            if (occupancyPercent >= 71) {
+                level = 'red';
+                statusLabel = 'HIGH CROWD';
+            } else if (occupancyPercent >= 41) {
+                level = 'orange';
+                statusLabel = 'MODERATE CROWD';
+            }
+
+            const routeDisplay = busData?.busRoute || path.map(s => s.name).join(' → ');
+            const busNumber = busData?.busNumber || 'MH-12 AB 1234';
+
+            document.getElementById('bus-number').textContent = busNumber;
+            document.getElementById('bus-route').textContent = routeDisplay;
+            document.getElementById('bus-passengers').textContent = passengersInside;
+            document.getElementById('bus-capacity').textContent = maxCapacity;
+            document.getElementById('bus-seats').textContent = availableSeats;
+
+            const pctElem = document.getElementById('bus-occupancy-pct');
+            pctElem.textContent = `${occupancyPercent}%`;
+            pctElem.className = `text-${level}`;
+
+            const statusBadge = document.getElementById('bus-status-badge');
+            statusBadge.textContent = statusLabel;
+            statusBadge.className = `crowd-chip ${level}`;
+
+            const progressBar = document.getElementById('bus-progress-bar');
+            progressBar.style.width = `${Math.min(100, occupancyPercent)}%`;
+            progressBar.className = `bus-progress-fill ${level}`;
+        }
+
         async function calculateRoute(event) {
             event.preventDefault();
 
@@ -276,7 +360,7 @@
                     fullNetwork.edges = data.edges;
                 }
 
-                // Update Summary KPIs
+                // Update Summary KPIs (Stop-level route congestion)
                 document.getElementById('est-time').textContent = `${data.totalTime} mins`;
                 const crowdElem = document.getElementById('est-crowd');
                 crowdElem.textContent = `${data.avgCrowd}%`;
@@ -288,7 +372,7 @@
                 document.getElementById('map-badge').textContent =
                     `${data.path[0].name} → ${data.path[data.path.length - 1].name}`;
 
-                // Populate Step-by-Step Stop List
+                // Populate Step-by-Step Stop List (Stop Crowd Estimation)
                 const list = document.getElementById('stop-timeline');
                 list.innerHTML = '';
                 data.path.forEach((stop, index) => {
@@ -305,6 +389,9 @@
                     `;
                     list.appendChild(li);
                 });
+
+                // Populate Bus Crowd Estimation (Separate Section)
+                updateBusCrowdSection(data.bus, data.path);
 
                 // Render Map & Reveal Workspace
                 renderMap(data.path);
