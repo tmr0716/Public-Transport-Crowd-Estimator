@@ -15,7 +15,7 @@ using namespace std;
 struct StopNode {
     int id;
     string name;
-    int crowdDensity; // Stop crowd percentage (15% - 95%) - kept separate from bus
+    int crowdDensity; // Dynamic random stop crowd percentage (15% - 95%)
     int x, y;         // Map SVG coordinates (720x380 viewBox)
 };
 
@@ -34,40 +34,8 @@ struct BusInfo {
     string crowdStatus;
 };
 
-struct KruskalEdge {
-    int u, v;
-    int travelTimeMinutes;
-    double weight;
-
-    bool operator<(const KruskalEdge& other) const {
-        return weight < other.weight;
-    }
-};
-
-// Disjoint Set Union (Union-Find) for Cycle Detection in Kruskal's Algorithm
-class DSU {
-    vector<int> parent;
-public:
-    DSU(int n) : parent(n) {
-        for (int i = 0; i < n; ++i) parent[i] = i;
-    }
-
-    int find(int x) {
-        if (parent[x] == x) return x;
-        return parent[x] = find(parent[x]);
-    }
-
-    bool unite(int x, int y) {
-        int rootX = find(x);
-        int rootY = find(y);
-        if (rootX == rootY) return false;
-        parent[rootX] = rootY;
-        return true;
-    }
-};
-
 // ============================================================================
-// 2. GRAPH NETWORK & KRUSKAL'S CROWD-AVOIDANCE ROUTING
+// 2. GRAPH NETWORK & DYNAMIC PROGRAMMING ROUTE ENGINE
 // ============================================================================
 class TransitNetwork {
     int V;
@@ -153,28 +121,6 @@ class TransitNetwork {
         return json.str();
     }
 
-    // DFS helper to trace unique path from start to end inside Kruskal's MST
-    bool findPathInMST(int curr, int target, vector<vector<Edge>>& mstAdj,
-                       vector<bool>& visited, vector<int>& path, int& totalTime) {
-        visited[curr] = true;
-        path.push_back(curr);
-
-        if (curr == target) return true;
-
-        for (const auto& edge : mstAdj[curr]) {
-            if (!visited[edge.to]) {
-                totalTime += edge.travelTimeMinutes;
-                if (findPathInMST(edge.to, target, mstAdj, visited, path, totalTime)) {
-                    return true;
-                }
-                totalTime -= edge.travelTimeMinutes;
-            }
-        }
-
-        path.pop_back();
-        return false;
-    }
-
 public:
     TransitNetwork() : rng(random_device{}()) {
         // 10 realistic Pune PMPML / Metro stops with balanced SVG coordinates
@@ -224,7 +170,7 @@ public:
         return "{\n  " + serializeFullNetwork() + "\n}";
     }
 
-    // Randomizes live crowd levels & computes least-congested path using Kruskal's MST
+    // Dynamic Programming (Space-Optimized Bellman-Ford) Crowd-Aware Route Finder
     string findOptimalRouteJson(int start, int end) {
         if (start < 0 || start >= V || end < 0 || end >= V) {
             return "{\"error\":\"Invalid stop ID\"}";
@@ -233,61 +179,61 @@ public:
         // Generate fresh random crowd % for every stop on each request
         randomizeCrowdLevels();
 
-        // 1. Collect all unique edges with strong quadratic crowd avoidance penalty
-        vector<KruskalEdge> allEdges;
+        // DP tables: minimum crowd-penalized cost, actual travel time, and parent pointers
+        vector<double> dpCost(V, 1e9);
+        vector<int> actualTime(V, 1e9);
+        vector<int> parent(V, -1);
+
+        dpCost[start] = 0.0;
+        actualTime[start] = 0;
+
         const double CROWD_PENALTY_WEIGHT = 85.0;
 
-        for (int u = 0; u < V; ++u) {
-            for (const auto& edge : adj[u]) {
-                if (u < edge.to) {
-                    int effectiveCrowd = 0;
-                    if (u != start && u != end) effectiveCrowd = max(effectiveCrowd, nodes[u].crowdDensity);
-                    if (edge.to != start && edge.to != end) effectiveCrowd = max(effectiveCrowd, nodes[edge.to].crowdDensity);
+        // DP Tabulation: V - 1 edge relaxation stages
+        for (int step = 1; step <= V - 1; ++step) {
+            bool updated = false;
+            for (int u = 0; u < V; ++u) {
+                if (dpCost[u] >= 1e9) continue;
 
-                    double ratio = effectiveCrowd / 100.0;
+                for (const auto& edge : adj[u]) {
+                    int v = edge.to;
+                    // Penalize intermediate stop congestion; destination itself has 0 detour penalty
+                    int crowd = (v == end) ? 0 : nodes[v].crowdDensity;
+                    double ratio = crowd / 100.0;
                     double weight = edge.travelTimeMinutes + (ratio * ratio * CROWD_PENALTY_WEIGHT);
-                    allEdges.push_back({u, edge.to, edge.travelTimeMinutes, weight});
+
+                    if (dpCost[u] + weight < dpCost[v]) {
+                        dpCost[v] = dpCost[u] + weight;
+                        actualTime[v] = actualTime[u] + edge.travelTimeMinutes;
+                        parent[v] = u;
+                        updated = true;
+                    }
                 }
             }
+            if (!updated) break; // Early termination if DP table converged
         }
 
-        // 2. Sort all edges by crowd-aware weight (Kruskal's Step 1)
-        sort(allEdges.begin(), allEdges.end());
-
-        // 3. Build Minimum Spanning Tree using Union-Find (Kruskal's Step 2)
-        DSU dsu(V);
-        vector<vector<Edge>> mstAdj(V);
-        int edgesAdded = 0;
-
-        for (const auto& e : allEdges) {
-            if (dsu.unite(e.u, e.v)) {
-                mstAdj[e.u].push_back({e.v, e.travelTimeMinutes});
-                mstAdj[e.v].push_back({e.u, e.travelTimeMinutes});
-                edgesAdded++;
-                if (edgesAdded == V - 1) break;
-            }
-        }
-
-        // 4. Trace unique path from start to end inside Kruskal's MST
+        // Backtrack parent pointers to reconstruct optimal path
         vector<int> path;
-        vector<bool> visited(V, false);
-        int totalTime = 0;
-        findPathInMST(start, end, mstAdj, visited, path, totalTime);
+        for (int v = end; v != -1; v = parent[v]) {
+            path.push_back(v);
+        }
+        reverse(path.begin(), path.end());
 
-        // 5. Calculate average stop congestion along the chosen path (kept separate from bus)
+        // Calculate average stop congestion along the chosen path
         int totalCrowd = 0;
         for (int nodeIdx : path) {
             totalCrowd += nodes[nodeIdx].crowdDensity;
         }
         int avgCrowd = path.empty() ? 0 : totalCrowd / path.size();
 
-        // 6. Generate independent Bus Crowd Estimation for this route
+        // Generate independent Bus Crowd Estimation for this route
         BusInfo bus = generateBusEstimation(path);
 
-        // 7. Build JSON response
+        // Build JSON response
         stringstream json;
         json << "{\n";
-        json << "  \"totalTime\": " << totalTime << ",\n";
+        json << "  \"totalTime\": " << actualTime[end] << ",\n";
         json << "  \"avgCrowd\": " << avgCrowd << ",\n";
         json << "  " << serializeFullNetwork() << ",\n";
         json << "  \"path\": [";
@@ -331,7 +277,7 @@ int main() {
         res.set_content(network.getFullNetworkJson(), "application/json");
     });
 
-    // Dynamic random crowd + Kruskal's route calculation endpoint
+    // Dynamic Programming crowd-aware route endpoint
     svr.Get("/api/route", [&network](const httplib::Request& req, httplib::Response& res) {
         if (req.has_param("start") && req.has_param("end")) {
             try {
